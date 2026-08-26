@@ -1,1 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
 
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width,
+        initial-scale=1.0,
+        maximum-scale=1.0,
+        user-scalable=no,
+        viewport-fit=cover"
+    >
+
+    <meta
+        name="theme-color"
+        content="#07100b"
+    >
+
+    <meta
+        name="description"
+        content="PET WORLD - Open World Creature Survival Adventure"
+    >
+
+    <title>PET WORLD</title>
+
+    <link
+        rel="stylesheet"
+        href="css/style.css"
+    >
+
+</head>
+
+<body>
+
+    <!-- =========================================
+         GAME CANVAS
+    ========================================== -->
+
+    <div id="gameContainer"></div>
+
+
+    <!-- =========================================
+         LOADING SCREEN
+    ========================================== -->
+
+    <div id="loadingScreen">
+
+        <div class="loadingContent">
+
+            <div class="gameLogo">
+                PET WORLD
+            </div>
+
+            <div class="loadingSubtitle">
+                OPEN WORLD CREATURE ADVENTURE
+            </div>
+
+            <div class="loadingBar">
+
+                <div
+                    id="loadingProgress"
+                    class="loadingProgress"
+                ></div>
+
+            </div>
+
+            <div id="loadingText">
+                Loading world...
+            </div>
+
+            <div
+                id="loadingPercent"
+                class="loadingPercent"
+            >
+                0%
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         MAIN MENU
+    ========================================== -->
+
+    <div
+        id="mainMenu"
+        class="screen hidden"
+    >
+
+        <div class="menuOverlay">
+
+            <div class="menuLogo">
+                PET WORLD
+            </div>
+
+            <div class="menuTagline">
+                EXPLORE • CAPTURE • SURVIVE
+            </div>
+
+            <div class="menuButtons">
+
+                <button
+                    id="newGameButton"
+                    class="menuButton primary"
+                >
+                    NEW GAME
+                </button>
+
+                <button
+                    id="continueButton"
+                    class="menuButton"
+                >
+                    CONTINUE
+                </button>
+
+                <button
+                    id="settingsButton"
+                    class="menuButton"
+                >
+                    SETTINGS
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         GAME UI
+    ========================================== -->
+
+    <div
+        id="gameUI"
+        class="hidden"
+    >
+
+        <!-- =====================================
+             TOP LEFT PLAYER HUD
+        ====================================== -->
+
+        <div id="playerHUD">
+
+            <div class="playerIdentity">
+
+                <div
+                    id="playerAvatar"
+                    class="playerAvatar"
+                >
+                    P
+                </div>
+
+                <div class="playerDetails">
+
+                    <div
+                        id="playerName"
+                        class="playerName"
+                    >
+                        PLAYER
+                    </div>
+
+                    <div
+                        id="playerLevel"
+                        class="playerLevel"
+                    >
+                        LEVEL 1
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- HEALTH -->
+
+            <div class="statBar healthBar">
+
+                <span class="statIcon">
+                    ♥
+                </span>
+
+                <div class="statTrack">
+
+                    <div
+                        id="healthFill"
+                        class="statFill"
+                        style="width:100%"
+                    ></div>
+
+                </div>
+
+                <span
+                    id="healthText"
+                    class="statText"
+                >
+                    100/100
+                </span>
+
+            </div>
+
+
+            <!-- STAMINA -->
+
+            <div class="statBar staminaBar">
+
+                <span class="statIcon">
+                    ⚡
+                </span>
+
+                <div class="statTrack">
+
+                    <div
+                        id="staminaFill"
+                        class="statFill"
+                        style="width:100%"
+                    ></div>
+
+                </div>
+
+                <span
+                    id="staminaText"
+                    class="statText"
+                >
+                    100/100
+                </span>
+
+            </div>
+
+
+            <!-- HUNGER -->
+
+            <div class="statBar hungerBar">
+
+                <span class="statIcon">
+                    🍖
+                </span>
+
+                <div class="statTrack">
+
+                    <div
+                        id="hungerFill"
+                        class="statFill"
+                        style="width:100%"
+                    ></div>
+
+                </div>
+
+                <span
+                    id="hungerText"
+                    class="statText"
+                >
+                    100/100
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================
+             TOP RIGHT BUTTONS
+        ====================================== -->
+
+        <div id="topButtons">
+
+            <button
+                id="mapButton"
+                class="hudButton"
+                aria-label="Map"
+            >
+                🗺️
+            </button>
+
+            <button
+                id="inventoryButton"
+                class="hudButton"
+                aria-label="Inventory"
+            >
+                🎒
+            </button>
+
+            <button
+                id="settingsHUDButton"
+                class="hudButton"
+                aria-label="Settings"
+            >
+                ⚙️
+            </button>
+
+        </div>
+
+
+        <!-- =====================================
+             DAY / NIGHT DISPLAY
+        ====================================== -->
+
+        <div id="worldInfo">
+
+            <div id="timeIcon">
+                ☀️
+            </div>
+
+            <div>
+
+                <div
+                    id="worldTime"
+                    class="worldTime"
+                >
+                    08:00
+                </div>
+
+                <div
+                    id="worldWeather"
+                    class="worldWeather"
+                >
+                    CLEAR
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================
+             TARGET INFORMATION
+        ====================================== -->
+
+        <div
+            id="targetInfo"
+            class="hidden"
+        >
+
+            <div
+                id="targetName"
+                class="targetName"
+            >
+                Wild Creature
+            </div>
+
+            <div
+                id="targetLevel"
+                class="targetLevel"
+            >
+                LEVEL 1
+            </div>
+
+            <div class="targetHealth">
+
+                <div
+                    id="targetHealthFill"
+                    class="targetHealthFill"
+                ></div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================
+             CROSSHAIR
+        ====================================== -->
+
+        <div id="crosshair">
+
+            <div class="crosshairLine horizontal"></div>
+
+            <div class="crosshairLine vertical"></div>
+
+            <div class="crosshairDot"></div>
+
+        </div>
+
+
+        <!-- =====================================
+             INTERACTION MESSAGE
+        ====================================== -->
+
+        <div
+            id="interactionMessage"
+            class="hidden"
+        >
+
+            <span id="interactionIcon">
+                ✋
+            </span>
+
+            <span id="interactionText">
+                Interact
+            </span>
+
+        </div>
+
+
+        <!-- =====================================
+             NOTIFICATION
+        ====================================== -->
+
+        <div
+            id="notificationContainer"
+        ></div>
+
+
+        <!-- =====================================
+             PET INFORMATION
+        ====================================== -->
+
+        <div id="petHUD">
+
+            <div class="petHeader">
+
+                <div
+                    id="activePetIcon"
+                    class="petIcon"
+                >
+                    🐾
+                </div>
+
+                <div>
+
+                    <div
+                        id="activePetName"
+                        class="petName"
+                    >
+                        No Pet
+                    </div>
+
+                    <div
+                        id="activePetLevel"
+                        class="petLevel"
+                    >
+                        --
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="petHealth">
+
+                <div
+                    id="petHealthFill"
+                    class="petHealthFill"
+                    style="width:100%"
+                ></div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================
+             MOBILE JOYSTICK
+        ====================================== -->
+
+        <div
+            id="mobileJoystick"
+            class="mobileControl"
+        >
+
+            <div
+                id="joystickBase"
+                class="joystickBase"
+            >
+
+                <div
+                    id="joystickStick"
+                    class="joystickStick"
+                ></div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================
+             MOBILE ACTION BUTTONS
+        ====================================== -->
+
+        <div id="mobileActions">
+
+            <button
+                id="jumpButton"
+                class="actionButton jump"
+            >
+                ↑
+            </button>
+
+            <button
+                id="dodgeButton"
+                class="actionButton dodge"
+            >
+                ◈
+            </button>
+
+            <button
+                id="attackButton"
+                class="actionButton attack"
+            >
+                ⚔
+            </button>
+
+            <button
+                id="captureButton"
+                class="actionButton capture"
+            >
+                ◉
+            </button>
+
+            <button
+                id="petCommandButton"
+                class="actionButton petCommand"
+            >
+                🐾
+            </button>
+
+            <button
+                id="interactButton"
+                class="actionButton interact"
+            >
+                ✋
+            </button>
+
+        </div>
+
+
+        <!-- =====================================
+             PET QUICK SLOTS
+        ====================================== -->
+
+        <div id="petQuickSlots">
+
+            <button
+                class="petSlot active"
+                data-slot="0"
+            >
+                <span>1</span>
+                🐾
+            </button>
+
+            <button
+                class="petSlot"
+                data-slot="1"
+            >
+                <span>2</span>
+                🐾
+            </button>
+
+            <button
+                class="petSlot"
+                data-slot="2"
+            >
+                <span>3</span>
+                🐾
+            </button>
+
+            <button
+                class="petSlot"
+                data-slot="3"
+            >
+                <span>4</span>
+                🐾
+            </button>
+
+        </div>
+
+
+        <!-- =====================================
+             BOTTOM INFORMATION
+        ====================================== -->
+
+        <div id="bottomHint">
+            Explore the world and discover creatures
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         INVENTORY PANEL
+    ========================================== -->
+
+    <div
+        id="inventoryPanel"
+        class="gamePanel hidden"
+    >
+
+        <div class="panelHeader">
+
+            <h2>
+                🎒 INVENTORY
+            </h2>
+
+            <button
+                class="closePanel"
+                data-panel="inventoryPanel"
+            >
+                ×
+            </button>
+
+        </div>
+
+        <div class="panelBody">
+
+            <div
+                id="inventoryGrid"
+                class="inventoryGrid"
+            ></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         PET PANEL
+    ========================================== -->
+
+    <div
+        id="petPanel"
+        class="gamePanel hidden"
+    >
+
+        <div class="panelHeader">
+
+            <h2>
+                🐾 CREATURES
+            </h2>
+
+            <button
+                class="closePanel"
+                data-panel="petPanel"
+            >
+                ×
+            </button>
+
+        </div>
+
+        <div class="panelBody">
+
+            <div
+                id="petList"
+                class="petList"
+            ></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         MAP PANEL
+    ========================================== -->
+
+    <div
+        id="mapPanel"
+        class="gamePanel largePanel hidden"
+    >
+
+        <div class="panelHeader">
+
+            <h2>
+                🗺️ WORLD MAP
+            </h2>
+
+            <button
+                class="closePanel"
+                data-panel="mapPanel"
+            >
+                ×
+            </button>
+
+        </div>
+
+        <div
+            id="mapContainer"
+            class="mapContainer"
+        >
+
+            <div class="mapGrid"></div>
+
+            <div
+                id="mapPlayerMarker"
+                class="mapPlayerMarker"
+            >
+                ●
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         SETTINGS PANEL
+    ========================================== -->
+
+    <div
+        id="settingsPanel"
+        class="gamePanel hidden"
+    >
+
+        <div class="panelHeader">
+
+            <h2>
+                ⚙️ SETTINGS
+            </h2>
+
+            <button
+                class="closePanel"
+                data-panel="settingsPanel"
+            >
+                ×
+            </button>
+
+        </div>
+
+        <div class="settingsList">
+
+            <div class="settingRow">
+
+                <span>
+                    Graphics Quality
+                </span>
+
+                <select id="graphicsQuality">
+
+                    <option value="low">
+                        Low
+                    </option>
+
+                    <option
+                        value="medium"
+                        selected
+                    >
+                        Medium
+                    </option>
+
+                    <option value="high">
+                        High
+                    </option>
+
+                </select>
+
+            </div>
+
+            <div class="settingRow">
+
+                <span>
+                    Sound
+                </span>
+
+                <input
+                    id="soundToggle"
+                    type="checkbox"
+                    checked
+                >
+
+            </div>
+
+            <div class="settingRow">
+
+                <span>
+                    Music
+                </span>
+
+                <input
+                    id="musicToggle"
+                    type="checkbox"
+                    checked
+                >
+
+            </div>
+
+            <div class="settingRow">
+
+                <span>
+                    Shadows
+                </span>
+
+                <input
+                    id="shadowToggle"
+                    type="checkbox"
+                    checked
+                >
+
+            </div>
+
+            <div class="settingRow">
+
+                <span>
+                    Mobile Controls
+                </span>
+
+                <input
+                    id="mobileToggle"
+                    type="checkbox"
+                    checked
+                >
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         CHARACTER PANEL
+    ========================================== -->
+
+    <div
+        id="characterPanel"
+        class="gamePanel hidden"
+    >
+
+        <div class="panelHeader">
+
+            <h2>
+                👤 CHARACTER
+            </h2>
+
+            <button
+                class="closePanel"
+                data-panel="characterPanel"
+            >
+                ×
+            </button>
+
+        </div>
+
+        <div
+            id="characterStats"
+            class="characterStats"
+        >
+
+            <div>
+                <span>Health</span>
+                <strong>100</strong>
+            </div>
+
+            <div>
+                <span>Attack</span>
+                <strong>10</strong>
+            </div>
+
+            <div>
+                <span>Defense</span>
+                <strong>5</strong>
+            </div>
+
+            <div>
+                <span>Speed</span>
+                <strong>10</strong>
+            </div>
+
+            <div>
+                <span>Experience</span>
+                <strong>0</strong>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         CONFIRM DIALOG
+    ========================================== -->
+
+    <div
+        id="confirmDialog"
+        class="dialogOverlay hidden"
+    >
+
+        <div class="dialogBox">
+
+            <h2 id="dialogTitle">
+                Confirm
+            </h2>
+
+            <p id="dialogMessage">
+                Are you sure?
+            </p>
+
+            <div class="dialogButtons">
+
+                <button
+                    id="dialogCancel"
+                    class="dialogButton"
+                >
+                    CANCEL
+                </button>
+
+                <button
+                    id="dialogConfirm"
+                    class="dialogButton primary"
+                >
+                    CONFIRM
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         ERROR SCREEN
+    ========================================== -->
+
+    <div
+        id="errorScreen"
+        class="screen hidden"
+    >
+
+        <div class="errorBox">
+
+            <h1>
+                GAME ERROR
+            </h1>
+
+            <p id="errorMessage">
+                Something went wrong.
+            </p>
+
+            <button
+                id="reloadButton"
+                class="menuButton primary"
+            >
+                RELOAD GAME
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         SOCKET.IO
+    ========================================== -->
+
+    <script src="/socket.io/socket.io.js"></script>
+
+
+    <!-- =========================================
+         MAIN GAME SCRIPT
+    ========================================== -->
+
+    <script
+        type="module"
+        src="js/game.js"
+    ></script>
+
+</body>
+
+</html>
