@@ -1,5 +1,3 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
-
 export class GameSystems {
 
     constructor(game) {
@@ -10,39 +8,54 @@ export class GameSystems {
         // PLAYER PROGRESSION
         // =============================================
 
-        this.xp = 0;
-
         this.level = 1;
 
-        this.xpRequired = 100;
+        this.xp = 0;
+
+        this.xpToNextLevel = 100;
+
+        this.coins = 100;
+
 
         // =============================================
         // INVENTORY
         // =============================================
 
-        this.inventory = {};
+        this.inventory = {
 
-        this.inventorySize = 30;
+            captureOrb: 10,
+
+            food: 10,
+
+            wood: 0,
+
+            stone: 0,
+
+            fiber: 0,
+
+            crystal: 0
+
+        };
+
 
         // =============================================
-        // PET COLLECTION
+        // CAPTURED PETS
         // =============================================
 
         this.pets = [];
 
-        this.activePet = null;
+        this.activePetId = null;
+
 
         // =============================================
-        // WORLD DATA
+        // GAME STATE
         // =============================================
 
-        this.discoveredAreas = [];
+        this.isPaused = false;
 
-        this.craftedItems = {};
+        this.isCapturing = false;
 
-        this.gameStarted = false;
-
-        this.loadGame();
+        this.lastSaveTime = 0;
 
     }
 
@@ -53,48 +66,75 @@ export class GameSystems {
 
     async init() {
 
-        this.createStartingItems();
-
-        this.gameStarted = true;
-
-        return true;
+        this.loadGame();
 
     }
 
 
     // =================================================
-    // STARTING ITEMS
+    // XP
     // =================================================
 
-    createStartingItems() {
+    addXP(
+        amount
+    ) {
 
-        if (
-            Object.keys(this.inventory).length > 0
+        amount =
+            Math.max(
+                0,
+                Number(amount) || 0
+            );
+
+
+        this.xp += amount;
+
+
+        while (
+            this.xp >=
+            this.xpToNextLevel
         ) {
 
-            return;
+            this.xp -=
+                this.xpToNextLevel;
+
+
+            this.level++;
+
+
+            this.xpToNextLevel =
+                Math.floor(
+                    this.xpToNextLevel *
+                    1.25
+                );
+
+
+            if (
+                this.game.player
+            ) {
+
+                this.game.player.maxHealth +=
+                    5;
+
+                this.game.player.health =
+                    this.game.player.maxHealth;
+
+            }
+
+
+            if (
+                this.game.ui
+            ) {
+
+                this.game.ui.notify(
+                    `LEVEL UP! You are now level ${this.level}`
+                );
+
+            }
 
         }
 
-        this.addItem(
-            "capture_ball",
-            10
-        );
 
-        this.addItem(
-            "wood",
-            20
-        );
-
-        this.addItem(
-            "stone",
-            15
-        );
-
-        this.addItem(
-            "berry",
-            8
-        );
+        this.updateUI();
 
     }
 
@@ -104,65 +144,50 @@ export class GameSystems {
     // =================================================
 
     addItem(
-        itemId,
+        item,
         amount = 1
     ) {
 
         if (
-            !itemId ||
-            amount <= 0
+            !Object.prototype.hasOwnProperty.call(
+                this.inventory,
+                item
+            )
         ) {
 
-            return false;
+            this.inventory[item] =
+                0;
 
         }
 
-        if (
-            this.inventory[itemId] === undefined
-        ) {
 
-            if (
-                Object.keys(this.inventory).length >=
-                this.inventorySize
-            ) {
+        this.inventory[item] +=
+            Math.max(
+                0,
+                Number(amount) || 0
+            );
 
-                if (
-                    this.game.ui
-                ) {
 
-                    this.game.ui.notify(
-                        "Inventory is full!"
-                    );
-
-                }
-
-                return false;
-
-            }
-
-            this.inventory[itemId] = 0;
-
-        }
-
-        this.inventory[itemId] += amount;
-
-        return true;
+        this.updateUI();
 
     }
 
 
-    // =================================================
-    // REMOVE ITEM
-    // =================================================
-
     removeItem(
-        itemId,
+        item,
         amount = 1
     ) {
 
+        amount =
+            Math.max(
+                0,
+                Number(amount) || 0
+            );
+
+
         if (
             !this.hasItem(
-                itemId,
+                item,
                 amount
             )
         ) {
@@ -171,401 +196,55 @@ export class GameSystems {
 
         }
 
-        this.inventory[itemId] -= amount;
 
-        if (
-            this.inventory[itemId] <= 0
-        ) {
+        this.inventory[item] -=
+            amount;
 
-            delete this.inventory[itemId];
 
-        }
+        this.updateUI();
+
 
         return true;
 
     }
 
 
-    // =================================================
-    // HAS ITEM
-    // =================================================
-
     hasItem(
-        itemId,
+        item,
         amount = 1
     ) {
 
         return (
-            this.inventory[itemId] !== undefined &&
-            this.inventory[itemId] >= amount
+            Number(
+                this.inventory[item] || 0
+            ) >= amount
         );
 
     }
 
 
     // =================================================
-    // GET ITEM COUNT
-    // =================================================
-
-    getItemCount(
-        itemId
-    ) {
-
-        return this.inventory[itemId] || 0;
-
-    }
-
-
-    // =================================================
-    // EXPERIENCE
-    // =================================================
-
-    addXP(
-        amount
-    ) {
-
-        if (
-            amount <= 0
-        ) {
-
-            return;
-
-        }
-
-        this.xp += amount;
-
-        while (
-            this.xp >=
-            this.xpRequired
-        ) {
-
-            this.xp -=
-                this.xpRequired;
-
-            this.levelUp();
-
-        }
-
-    }
-
-
-    // =================================================
-    // LEVEL UP
-    // =================================================
-
-    levelUp() {
-
-        this.level++;
-
-        this.xpRequired =
-            Math.floor(
-                100 *
-                Math.pow(
-                    1.25,
-                    this.level - 1
-                )
-            );
-
-
-        if (
-            this.game.player
-        ) {
-
-            this.game.player.level =
-                this.level;
-
-            this.game.player.maxHealth +=
-                5;
-
-            this.game.player.health =
-                this.game.player.maxHealth;
-
-            this.game.player.maxStamina +=
-                3;
-
-            this.game.player.stamina =
-                this.game.player.maxStamina;
-
-        }
-
-
-        if (
-            this.game.ui
-        ) {
-
-            this.game.ui.notify(
-                `LEVEL UP! You are now level ${this.level}`
-            );
-
-        }
-
-    }
-
-
-    // =================================================
-    // ADD PET
-    // =================================================
-
-    addPet(
-        creature
-    ) {
-
-        if (
-            !creature
-        ) {
-
-            return null;
-
-        }
-
-
-        const pet = {
-
-            id:
-                creature.id,
-
-            speciesId:
-                creature.speciesId,
-
-            name:
-                creature.name,
-
-            level:
-                creature.level,
-
-            maxHealth:
-                creature.maxHealth,
-
-            health:
-                creature.maxHealth,
-
-            xp:
-                0,
-
-            active:
-                false
-
-        };
-
-
-        this.pets.push(
-            pet
-        );
-
-
-        // First pet becomes active.
-
-        if (
-            !this.activePet
-        ) {
-
-            this.setActivePet(
-                pet.id
-            );
-
-        }
-
-
-        this.addXP(
-            25
-        );
-
-
-        return pet;
-
-    }
-
-
-    // =================================================
-    // SET ACTIVE PET
-    // =================================================
-
-    setActivePet(
-        petId
-    ) {
-
-        const pet =
-            this.pets.find(
-                p =>
-                    p.id === petId
-            );
-
-
-        if (
-            !pet
-        ) {
-
-            return false;
-
-        }
-
-
-        for (
-            const p of this.pets
-        ) {
-
-            p.active =
-                false;
-
-        }
-
-
-        pet.active =
-            true;
-
-        this.activePet =
-            pet;
-
-
-        return true;
-
-    }
-
-
-    // =================================================
-    // REMOVE PET
-    // =================================================
-
-    removePet(
-        petId
-    ) {
-
-        const index =
-            this.pets.findIndex(
-                p =>
-                    p.id === petId
-            );
-
-
-        if (
-            index === -1
-        ) {
-
-            return false;
-
-        }
-
-
-        this.pets.splice(
-            index,
-            1
-        );
-
-
-        if (
-            this.activePet &&
-            this.activePet.id === petId
-        ) {
-
-            this.activePet =
-                null;
-
-            if (
-                this.pets.length > 0
-            ) {
-
-                this.setActivePet(
-                    this.pets[0].id
-                );
-
-            }
-
-        }
-
-
-        return true;
-
-    }
-
-
-    // =================================================
-    // PET XP
-    // =================================================
-
-    addPetXP(
-        petId,
-        amount
-    ) {
-
-        const pet =
-            this.pets.find(
-                p =>
-                    p.id === petId
-            );
-
-
-        if (
-            !pet
-        ) {
-
-            return;
-
-        }
-
-
-        pet.xp +=
-            amount;
-
-
-        const required =
-            pet.level *
-            100;
-
-
-        if (
-            pet.xp >=
-            required
-        ) {
-
-            pet.xp -=
-                required;
-
-            pet.level++;
-
-            pet.maxHealth +=
-                10;
-
-            pet.health =
-                pet.maxHealth;
-
-
-            if (
-                this.game.ui
-            ) {
-
-                this.game.ui.notify(
-                    `${pet.name} reached level ${pet.level}!`
-                );
-
-            }
-
-        }
-
-    }
-
-
-    // =================================================
-    // CAPTURE CREATURE
+    // CAPTURE
     // =================================================
 
     captureNearestCreature() {
 
         if (
-            !this.hasItem(
-                "capture_ball",
-                1
-            )
+            this.isCapturing
         ) {
 
-            if (
-                this.game.ui
-            ) {
+            return false;
 
-                this.game.ui.notify(
-                    "You don't have a Capture Ball!"
-                );
+        }
 
-            }
+
+        const creatureManager =
+            this.game.creatures;
+
+
+        if (
+            !creatureManager
+        ) {
 
             return false;
 
@@ -573,9 +252,9 @@ export class GameSystems {
 
 
         const creature =
-            this.game.creatures
+            creatureManager
                 .getNearestCreature(
-                    8
+                    6
                 );
 
 
@@ -593,248 +272,40 @@ export class GameSystems {
 
             }
 
-            return false;
-
-        }
-
-
-        this.removeItem(
-            "capture_ball",
-            1
-        );
-
-
-        return this.game.creatures
-            .captureCreature(
-                creature
-            );
-
-    }
-
-
-    // =================================================
-    // CRAFTING
-    // =================================================
-
-    craft(
-        recipeId
-    ) {
-
-        const recipes = {
-
-            capture_ball: {
-
-                result:
-                    "capture_ball",
-
-                amount:
-                    1,
-
-                ingredients: {
-
-                    wood:
-                        5,
-
-                    stone:
-                        3
-
-                }
-
-            },
-
-            wooden_tool: {
-
-                result:
-                    "wooden_tool",
-
-                amount:
-                    1,
-
-                ingredients: {
-
-                    wood:
-                        8,
-
-                    stone:
-                        2
-
-                }
-
-            },
-
-            healing_food: {
-
-                result:
-                    "healing_food",
-
-                amount:
-                    1,
-
-                ingredients: {
-
-                    berry:
-                        3,
-
-                    wood:
-                        1
-
-                }
-
-            }
-
-        };
-
-
-        const recipe =
-            recipes[recipeId];
-
-
-        if (
-            !recipe
-        ) {
 
             return false;
 
         }
 
 
-        // Check ingredients
-
-        for (
-            const item in
-            recipe.ingredients
-        ) {
-
-            if (
-                !this.hasItem(
-                    item,
-                    recipe.ingredients[item]
-                )
-            ) {
-
-                if (
-                    this.game.ui
-                ) {
-
-                    this.game.ui.notify(
-                        "Not enough materials."
-                    );
-
-                }
-
-                return false;
-
-            }
-
-        }
-
-
-        // Remove ingredients
-
-        for (
-            const item in
-            recipe.ingredients
-        ) {
-
-            this.removeItem(
-                item,
-                recipe.ingredients[item]
-            );
-
-        }
-
-
-        // Add result
-
-        this.addItem(
-            recipe.result,
-            recipe.amount
+        return this.captureCreature(
+            creature
         );
-
-
-        this.craftedItems[
-            recipeId
-        ] =
-            (
-                this.craftedItems[
-                    recipeId
-                ] || 0
-            ) + 1;
-
-
-        if (
-            this.game.ui
-        ) {
-
-            this.game.ui.notify(
-                "Item crafted!"
-            );
-
-        }
-
-
-        return true;
 
     }
 
 
     // =================================================
-    // DISCOVER AREA
+    // CAPTURE CREATURE
     // =================================================
 
-    discoverArea(
-        name
+    captureCreature(
+        creature
     ) {
 
         if (
-            !name
+            !creature ||
+            !creature.alive
         ) {
 
-            return;
+            return false;
 
         }
 
-
-        if (
-            !this.discoveredAreas.includes(
-                name
-            )
-        ) {
-
-            this.discoveredAreas.push(
-                name
-            );
-
-
-            this.addXP(
-                15
-            );
-
-
-            if (
-                this.game.ui
-            ) {
-
-                this.game.ui.notify(
-                    `New area discovered: ${name}`
-                );
-
-            }
-
-        }
-
-    }
-
-
-    // =================================================
-    // HEAL PLAYER USING FOOD
-    // =================================================
-
-    useHealingFood() {
 
         if (
             !this.hasItem(
-                "healing_food",
+                "captureOrb",
                 1
             )
         ) {
@@ -844,10 +315,11 @@ export class GameSystems {
             ) {
 
                 this.game.ui.notify(
-                    "You don't have healing food."
+                    "You need a Capture Orb."
                 );
 
             }
+
 
             return false;
 
@@ -855,14 +327,114 @@ export class GameSystems {
 
 
         this.removeItem(
-            "healing_food",
+            "captureOrb",
             1
         );
 
 
-        this.game.player.heal(
-            30
+        this.isCapturing =
+            true;
+
+
+        // =============================================
+        // CAPTURE CHANCE
+        // =============================================
+
+        const healthRatio =
+            creature.health /
+            creature.maxHealth;
+
+
+        let chance =
+            0.30 +
+            (
+                1 -
+                healthRatio
+            ) *
+            0.45;
+
+
+        if (
+            creature.rarity ===
+            "Uncommon"
+        ) {
+
+            chance -=
+                0.08;
+
+        }
+
+
+        if (
+            creature.rarity ===
+            "Rare"
+        ) {
+
+            chance -=
+                0.18;
+
+        }
+
+
+        chance +=
+            Math.min(
+                0.10,
+                this.level * 0.01
+            );
+
+
+        chance =
+            Math.max(
+                0.05,
+                Math.min(
+                    0.90,
+                    chance
+                )
+            );
+
+
+        const success =
+            Math.random() <
+            chance;
+
+
+        setTimeout(
+            () => {
+
+                this.isCapturing =
+                    false;
+
+
+                if (
+                    success
+                ) {
+
+                    this.completeCapture(
+                        creature
+                    );
+
+                } else {
+
+                    this.captureFailed(
+                        creature
+                    );
+
+                }
+
+            },
+            900
         );
+
+
+        if (
+            this.game.ui
+        ) {
+
+            this.game.ui.notify(
+                "Throwing Capture Orb..."
+            );
+
+        }
 
 
         return true;
@@ -871,26 +443,515 @@ export class GameSystems {
 
 
     // =================================================
-    // SAVE GAME
+    // CAPTURE SUCCESS
+    // =================================================
+
+    completeCapture(
+        creature
+    ) {
+
+        const pet = {
+
+            id:
+                `pet_${Date.now()}_${Math.random()
+                    .toString(36)
+                    .slice(2, 8)}`,
+
+            species:
+                creature.name,
+
+            name:
+                creature.name,
+
+            level:
+                creature.level,
+
+            rarity:
+                creature.rarity,
+
+            maxHealth:
+                creature.maxHealth,
+
+            health:
+                creature.maxHealth,
+
+            damage:
+                creature.damage,
+
+            speed:
+                creature.speed,
+
+            experience:
+                0,
+
+            hunger:
+                100,
+
+            capturedAt:
+                Date.now()
+
+        };
+
+
+        this.pets.push(
+            pet
+        );
+
+
+        if (
+            !this.activePetId
+        ) {
+
+            this.activePetId =
+                pet.id;
+
+        }
+
+
+        creature.alive =
+            false;
+
+
+        if (
+            this.game.ui
+        ) {
+
+            this.game.ui.notify(
+                `${pet.name} captured!`
+            );
+
+        }
+
+
+        this.addXP(
+            50 +
+            creature.level * 10
+        );
+
+
+        this.updateUI();
+
+    }
+
+
+    // =================================================
+    // CAPTURE FAILED
+    // =================================================
+
+    captureFailed(
+        creature
+    ) {
+
+        if (
+            this.game.ui
+        ) {
+
+            this.game.ui.notify(
+                `${creature.name} escaped!`
+            );
+
+        }
+
+
+        creature.state =
+            "flee";
+
+
+        creature.fleeTimer =
+            4;
+
+    }
+
+
+    // =================================================
+    // ACTIVE PET
+    // =================================================
+
+    getActivePet() {
+
+        if (
+            !this.activePetId
+        ) {
+
+            return null;
+
+        }
+
+
+        return (
+            this.pets.find(
+                pet =>
+                    pet.id ===
+                    this.activePetId
+            ) ||
+            null
+        );
+
+    }
+
+
+    // =================================================
+    // SET ACTIVE PET
+    // =================================================
+
+    setActivePet(
+        petId
+    ) {
+
+        const pet =
+            this.pets.find(
+                item =>
+                    item.id ===
+                    petId
+            );
+
+
+        if (
+            !pet
+        ) {
+
+            return false;
+
+        }
+
+
+        this.activePetId =
+            pet.id;
+
+
+        if (
+            this.game.ui
+        ) {
+
+            this.game.ui.notify(
+                `${pet.name} is now your active pet.`
+            );
+
+        }
+
+
+        this.updateUI();
+
+
+        return true;
+
+    }
+
+
+    // =================================================
+    // REMOVE PET
+    // =================================================
+
+    releasePet(
+        petId
+    ) {
+
+        const index =
+            this.pets.findIndex(
+                pet =>
+                    pet.id ===
+                    petId
+            );
+
+
+        if (
+            index === -1
+        ) {
+
+            return false;
+
+        }
+
+
+        const pet =
+            this.pets[index];
+
+
+        this.pets.splice(
+            index,
+            1
+        );
+
+
+        if (
+            this.activePetId ===
+            petId
+        ) {
+
+            this.activePetId =
+                this.pets.length
+                    ? this.pets[0].id
+                    : null;
+
+        }
+
+
+        this.updateUI();
+
+
+        return true;
+
+    }
+
+
+    // =================================================
+    // FEED ACTIVE PET
+    // =================================================
+
+    feedActivePet() {
+
+        const pet =
+            this.getActivePet();
+
+
+        if (
+            !pet
+        ) {
+
+            if (
+                this.game.ui
+            ) {
+
+                this.game.ui.notify(
+                    "You don't have an active pet."
+                );
+
+            }
+
+
+            return false;
+
+        }
+
+
+        if (
+            !this.hasItem(
+                "food",
+                1
+            )
+        ) {
+
+            if (
+                this.game.ui
+            ) {
+
+                this.game.ui.notify(
+                    "You don't have food."
+                );
+
+            }
+
+
+            return false;
+
+        }
+
+
+        this.removeItem(
+            "food",
+            1
+        );
+
+
+        pet.hunger =
+            Math.min(
+                100,
+                pet.hunger + 35
+            );
+
+
+        pet.health =
+            Math.min(
+                pet.maxHealth,
+                pet.health + 20
+            );
+
+
+        if (
+            this.game.ui
+        ) {
+
+            this.game.ui.notify(
+                `${pet.name} has been fed.`
+            );
+
+        }
+
+
+        this.updateUI();
+
+
+        return true;
+
+    }
+
+
+    // =================================================
+    // COLLECT RESOURCE
+    // =================================================
+
+    collectResource(
+        type,
+        amount = 1
+    ) {
+
+        const allowed = [
+
+            "wood",
+
+            "stone",
+
+            "fiber",
+
+            "crystal"
+
+        ];
+
+
+        if (
+            !allowed.includes(
+                type
+            )
+        ) {
+
+            return false;
+
+        }
+
+
+        this.addItem(
+            type,
+            amount
+        );
+
+
+        if (
+            this.game.ui
+        ) {
+
+            this.game.ui.notify(
+                `+${amount} ${type}`
+            );
+
+        }
+
+
+        return true;
+
+    }
+
+
+    // =================================================
+    // UPDATE
+    // =================================================
+
+    update(
+        delta
+    ) {
+
+        const pet =
+            this.getActivePet();
+
+
+        if (
+            pet
+        ) {
+
+            pet.hunger -=
+                0.25 *
+                delta;
+
+
+            pet.hunger =
+                Math.max(
+                    0,
+                    pet.hunger
+                );
+
+
+            if (
+                pet.hunger <= 0
+            ) {
+
+                pet.health -=
+                    0.5 *
+                    delta;
+
+            }
+
+
+            pet.health =
+                Math.max(
+                    1,
+                    pet.health
+                );
+
+        }
+
+
+        // Autosave every 30 seconds.
+
+        this.lastSaveTime +=
+            delta;
+
+
+        if (
+            this.lastSaveTime >=
+            30
+        ) {
+
+            this.lastSaveTime =
+                0;
+
+            this.saveGame();
+
+        }
+
+    }
+
+
+    // =================================================
+    // UI UPDATE
+    // =================================================
+
+    updateUI() {
+
+        if (
+            this.game.ui &&
+            typeof this.game.ui.updateStats ===
+            "function"
+        ) {
+
+            this.game.ui.updateStats(
+                this
+            );
+
+        }
+
+    }
+
+
+    // =================================================
+    // SAVE
     // =================================================
 
     saveGame() {
 
         try {
 
-            const saveData = {
-
-                version:
-                    1,
-
-                xp:
-                    this.xp,
+            const data = {
 
                 level:
                     this.level,
 
-                xpRequired:
-                    this.xpRequired,
+                xp:
+                    this.xp,
+
+                xpToNextLevel:
+                    this.xpToNextLevel,
+
+                coins:
+                    this.coins,
 
                 inventory:
                     this.inventory,
@@ -899,30 +960,24 @@ export class GameSystems {
                     this.pets,
 
                 activePetId:
-                    this.activePet
-                        ? this.activePet.id
-                        : null,
-
-                discoveredAreas:
-                    this.discoveredAreas,
-
-                craftedItems:
-                    this.craftedItems
+                    this.activePetId
 
             };
 
 
             localStorage.setItem(
-                "petWorldSave",
+                "pet_world_save",
                 JSON.stringify(
-                    saveData
+                    data
                 )
             );
 
 
-            console.log(
-                "Game saved."
-            );
+            this.lastSaveTime =
+                0;
+
+
+            return true;
 
         } catch (
             error
@@ -933,13 +988,16 @@ export class GameSystems {
                 error
             );
 
+
+            return false;
+
         }
 
     }
 
 
     // =================================================
-    // LOAD GAME
+    // LOAD
     // =================================================
 
     loadGame() {
@@ -948,7 +1006,7 @@ export class GameSystems {
 
             const saved =
                 localStorage.getItem(
-                    "petWorldSave"
+                    "pet_world_save"
                 );
 
 
@@ -956,7 +1014,7 @@ export class GameSystems {
                 !saved
             ) {
 
-                return;
+                return false;
 
             }
 
@@ -967,49 +1025,89 @@ export class GameSystems {
                 );
 
 
-            this.xp =
-                data.xp || 0;
-
-            this.level =
-                data.level || 1;
-
-            this.xpRequired =
-                data.xpRequired ||
-                100;
-
-
-            this.inventory =
-                data.inventory || {};
-
-
-            this.pets =
-                data.pets || [];
-
-
-            this.discoveredAreas =
-                data.discoveredAreas ||
-                [];
-
-
-            this.craftedItems =
-                data.craftedItems ||
-                {};
-
-
             if (
-                data.activePetId
+                typeof data.level ===
+                "number"
             ) {
 
-                this.setActivePet(
-                    data.activePetId
-                );
+                this.level =
+                    data.level;
 
             }
 
 
-            console.log(
-                "Game loaded."
-            );
+            if (
+                typeof data.xp ===
+                "number"
+            ) {
+
+                this.xp =
+                    data.xp;
+
+            }
+
+
+            if (
+                typeof data.xpToNextLevel ===
+                "number"
+            ) {
+
+                this.xpToNextLevel =
+                    data.xpToNextLevel;
+
+            }
+
+
+            if (
+                typeof data.coins ===
+                "number"
+            ) {
+
+                this.coins =
+                    data.coins;
+
+            }
+
+
+            if (
+                data.inventory &&
+                typeof data.inventory ===
+                "object"
+            ) {
+
+                this.inventory =
+                    {
+                        ...this.inventory,
+                        ...data.inventory
+                    };
+
+            }
+
+
+            if (
+                Array.isArray(
+                    data.pets
+                )
+            ) {
+
+                this.pets =
+                    data.pets;
+
+            }
+
+
+            if (
+                typeof data.activePetId ===
+                "string"
+            ) {
+
+                this.activePetId =
+                    data.activePetId;
+
+            }
+
+
+            return true;
 
         } catch (
             error
@@ -1020,6 +1118,9 @@ export class GameSystems {
                 error
             );
 
+
+            return false;
+
         }
 
     }
@@ -1029,70 +1130,83 @@ export class GameSystems {
     // RESET SAVE
     // =================================================
 
-    resetSave() {
+    resetGame() {
 
-        localStorage.removeItem(
-            "petWorldSave"
-        );
+        try {
 
-        location.reload();
+            localStorage.removeItem(
+                "pet_world_save"
+            );
+
+        } catch (
+            error
+        ) {
+
+            console.error(
+                "Reset failed:",
+                error
+            );
+
+        }
+
+
+        this.level =
+            1;
+
+        this.xp =
+            0;
+
+        this.xpToNextLevel =
+            100;
+
+        this.coins =
+            100;
+
+
+        this.inventory = {
+
+            captureOrb: 10,
+
+            food: 10,
+
+            wood: 0,
+
+            stone: 0,
+
+            fiber: 0,
+
+            crystal: 0
+
+        };
+
+
+        this.pets = [];
+
+        this.activePetId =
+            null;
+
+
+        this.updateUI();
 
     }
 
 
     // =================================================
-    // UPDATE
+    // GAME PAUSE
     // =================================================
 
-    update(
-        delta,
-        elapsed
-    ) {
+    pause() {
 
-        // Autosave every 30 seconds.
+        this.isPaused =
+            true;
 
-        if (
-            !this.saveTimer
-        ) {
-
-            this.saveTimer = 0;
-
-        }
+    }
 
 
-        this.saveTimer +=
-            delta;
+    resume() {
 
-
-        if (
-            this.saveTimer >=
-            30
-        ) {
-
-            this.saveTimer = 0;
-
-            this.saveGame();
-
-        }
-
-
-        // Pet regeneration
-
-        if (
-            this.activePet
-        ) {
-
-            this.activePet.health =
-                Math.min(
-
-                    this.activePet.maxHealth,
-
-                    this.activePet.health +
-                    delta * 0.5
-
-                );
-
-        }
+        this.isPaused =
+            false;
 
     }
 
