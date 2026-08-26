@@ -7,165 +7,91 @@ import { GameSystems } from "./systems.js";
 import { GameUI } from "./ui.js";
 import { MobileControls } from "./mobile.js";
 
-// =====================================================
-// PET WORLD
-// MAIN GAME ENGINE
-// =====================================================
 
-class PetWorldGame {
+export class Game {
 
     constructor() {
 
         this.scene = null;
+
         this.camera = null;
+
         this.renderer = null;
 
-        this.clock = new THREE.Clock();
+        this.clock =
+            new THREE.Clock();
 
-        this.world = null;
-        this.player = null;
-        this.creatures = null;
-        this.systems = null;
-        this.ui = null;
-        this.mobile = null;
+        this.elapsed = 0;
 
         this.running = false;
 
-        this.loadingProgress = 0;
+        this.sun = null;
 
-        this.init();
+        this.moon = null;
+
+        this.world = null;
+
+        this.player = null;
+
+        this.creatures = null;
+
+        this.systems = null;
+
+        this.ui = null;
+
+        this.mobile = null;
 
     }
 
+
     // =================================================
-    // INITIALIZATION
+    // INITIALIZE
     // =================================================
 
     async init() {
 
-        try {
+        this.createScene();
 
-            this.updateLoading(
-                10,
-                "Initializing game..."
+        this.createCamera();
+
+        this.createRenderer();
+
+        this.createLights();
+
+        this.createSystems();
+
+        await this.world.init();
+
+        await this.player.init();
+
+        await this.creatures.init();
+
+        await this.systems.init();
+
+        this.ui = new GameUI(
+            this
+        );
+
+        this.mobile =
+            new MobileControls(
+                this
             );
 
-            this.createScene();
+        this.mobile.init();
 
-            this.updateLoading(
-                20,
-                "Creating camera..."
-            );
+        this.setupResize();
 
-            this.createCamera();
+        this.setupInteraction();
 
-            this.updateLoading(
-                30,
-                "Creating renderer..."
-            );
+        this.running = true;
 
-            this.createRenderer();
-
-            this.updateLoading(
-                40,
-                "Creating lighting..."
-            );
-
-            this.createLighting();
-
-            this.updateLoading(
-                50,
-                "Loading world..."
-            );
-
-            this.world =
-                new World(this);
-
-            await this.world.init();
-
-            this.updateLoading(
-                65,
-                "Creating player..."
-            );
-
-            this.player =
-                new Player(this);
-
-            await this.player.init();
-
-            this.updateLoading(
-                75,
-                "Loading creatures..."
-            );
-
-            this.creatures =
-                new CreatureManager(this);
-
-            await this.creatures.init();
-
-            this.updateLoading(
-                85,
-                "Starting game systems..."
-            );
-
-            this.systems =
-                new GameSystems(this);
-
-            await this.systems.init();
-
-            this.updateLoading(
-                92,
-                "Creating interface..."
-            );
-
-            this.ui =
-                new GameUI(this);
-
-            await this.ui.init();
-
-            this.updateLoading(
-                96,
-                "Preparing mobile controls..."
-            );
-
-            this.mobile =
-                new MobileControls(this);
-
-            await this.mobile.init();
-
-            this.setupEvents();
-
-            this.updateLoading(
-                100,
-                "World ready!"
-            );
-
-            setTimeout(() => {
-
-                this.hideLoadingScreen();
-
-                this.start();
-
-            }, 500);
-
-        } catch (error) {
-
-            console.error(
-                "PET WORLD ERROR:",
-                error
-            );
-
-            this.showError(
-                error.message ||
-                "Unable to start game."
-            );
-
-        }
+        this.animate();
 
     }
 
+
     // =================================================
-    // THREE.JS SCENE
+    // SCENE
     // =================================================
 
     createScene() {
@@ -173,19 +99,15 @@ class PetWorldGame {
         this.scene =
             new THREE.Scene();
 
-        this.scene.background =
-            new THREE.Color(
-                0x87a8b5
-            );
-
         this.scene.fog =
             new THREE.Fog(
-                0x87a8b5,
-                60,
-                450
+                0x91a8ad,
+                70,
+                430
             );
 
     }
+
 
     // =================================================
     // CAMERA
@@ -193,19 +115,20 @@ class PetWorldGame {
 
     createCamera() {
 
-        const width =
-            window.innerWidth;
-
-        const height =
-            window.innerHeight;
-
         this.camera =
             new THREE.PerspectiveCamera(
+
                 65,
-                width / height,
+
+                window.innerWidth /
+                window.innerHeight,
+
                 0.1,
+
                 1000
+
             );
+
 
         this.camera.position.set(
             0,
@@ -213,13 +136,8 @@ class PetWorldGame {
             10
         );
 
-        this.camera.lookAt(
-            0,
-            2,
-            0
-        );
-
     }
+
 
     // =================================================
     // RENDERER
@@ -229,10 +147,14 @@ class PetWorldGame {
 
         this.renderer =
             new THREE.WebGLRenderer({
+
                 antialias: true,
+
                 powerPreference:
                     "high-performance"
+
             });
+
 
         this.renderer.setPixelRatio(
             Math.min(
@@ -241,81 +163,67 @@ class PetWorldGame {
             )
         );
 
+
         this.renderer.setSize(
             window.innerWidth,
             window.innerHeight
         );
 
+
         this.renderer.shadowMap.enabled =
             true;
+
 
         this.renderer.shadowMap.type =
             THREE.PCFSoftShadowMap;
 
+
         this.renderer.outputColorSpace =
             THREE.SRGBColorSpace;
+
 
         this.renderer.toneMapping =
             THREE.ACESFilmicToneMapping;
 
+
         this.renderer.toneMappingExposure =
-            1.0;
+            1.05;
 
-        const container =
-            document.getElementById(
-                "gameContainer"
-            );
 
-        if (!container) {
-
-            throw new Error(
-                "Game container not found."
-            );
-
-        }
-
-        container.appendChild(
+        document.body.appendChild(
             this.renderer.domElement
         );
 
     }
 
+
     // =================================================
-    // LIGHTING
+    // LIGHTS
     // =================================================
 
-    createLighting() {
+    createLights() {
 
-        // Ambient light
-
-        const ambient =
-            new THREE.HemisphereLight(
-                0xbfd8e5,
-                0x304020,
-                1.6
-            );
-
-        this.scene.add(
-            ambient
-        );
-
-
-        // Sun
+        // -----------------------------
+        // SUN
+        // -----------------------------
 
         this.sun =
             new THREE.DirectionalLight(
                 0xffffff,
-                2.5
+                2.0
             );
+
 
         this.sun.position.set(
             100,
-            180,
+            150,
             80
         );
 
+
         this.sun.castShadow =
             true;
+
 
         this.sun.shadow.mapSize.width =
             1024;
@@ -323,36 +231,42 @@ class PetWorldGame {
         this.sun.shadow.mapSize.height =
             1024;
 
+
         this.sun.shadow.camera.near =
-            1;
+            10;
 
         this.sun.shadow.camera.far =
-            500;
+            400;
+
 
         this.sun.shadow.camera.left =
-            -150;
+            -200;
 
         this.sun.shadow.camera.right =
-            150;
+            200;
 
         this.sun.shadow.camera.top =
-            150;
+            200;
 
         this.sun.shadow.camera.bottom =
-            -150;
+            -200;
+
 
         this.scene.add(
             this.sun
         );
 
 
-        // Moon light
+        // -----------------------------
+        // MOON
+        // -----------------------------
 
         this.moon =
             new THREE.DirectionalLight(
-                0x7890b5,
-                0.15
+                0x9bb8ff,
+                0.25
             );
+
 
         this.moon.position.set(
             -100,
@@ -360,17 +274,208 @@ class PetWorldGame {
             -80
         );
 
+
         this.scene.add(
             this.moon
         );
 
+
+        // -----------------------------
+        // AMBIENT
+        // -----------------------------
+
+        const ambient =
+            new THREE.HemisphereLight(
+
+                0xb8d0d6,
+
+                0x33402e,
+
+                1.15
+
+            );
+
+
+        this.scene.add(
+            ambient
+        );
+
     }
 
+
     // =================================================
-    // EVENTS
+    // SYSTEMS
     // =================================================
 
-    setupEvents() {
+    createSystems() {
+
+        this.world =
+            new World(
+                this
+            );
+
+
+        this.player =
+            new Player(
+                this
+            );
+
+
+        this.creatures =
+            new CreatureManager(
+                this
+            );
+
+
+        this.systems =
+            new GameSystems(
+                this
+            );
+
+    }
+
+
+    // =================================================
+    // INTERACTION
+    // =================================================
+
+    setupInteraction() {
+
+        window.addEventListener(
+            "keydown",
+            event => {
+
+                // Capture with E
+
+                if (
+                    event.code ===
+                    "KeyE"
+                ) {
+
+                    if (
+                        this.systems
+                    ) {
+
+                        this.systems
+                            .captureNearestCreature();
+
+                    }
+
+                }
+
+
+                // Heal with F
+
+                if (
+                    event.code ===
+                    "KeyF"
+                ) {
+
+                    if (
+                        this.systems
+                    ) {
+
+                        this.systems
+                            .useHealingFood();
+
+                    }
+
+                }
+
+
+                // Attack with left mouse
+
+                if (
+                    event.code ===
+                    "KeyQ"
+                ) {
+
+                    this.attack();
+
+                }
+
+            }
+        );
+
+
+        this.renderer.domElement
+            .addEventListener(
+                "mousedown",
+                event => {
+
+                    if (
+                        event.button === 0 &&
+                        document.pointerLockElement
+                        ===
+                        this.renderer.domElement
+                    ) {
+
+                        this.attack();
+
+                    }
+
+                }
+            );
+
+    }
+
+
+    // =================================================
+    // ATTACK
+    // =================================================
+
+    attack() {
+
+        if (
+            !this.creatures
+        ) {
+
+            return;
+
+        }
+
+
+        const creature =
+            this.creatures
+                .getNearestCreature(
+                    4
+                );
+
+
+        if (
+            !creature
+        ) {
+
+            return;
+
+        }
+
+
+        this.creatures
+            .damageCreature(
+                creature,
+                20
+            );
+
+
+        if (
+            this.ui
+        ) {
+
+            this.ui.notify(
+                `Hit ${creature.name}!`
+            );
+
+        }
+
+    }
+
+
+    // =================================================
+    // RESIZE
+    // =================================================
+
+    setupResize() {
 
         window.addEventListener(
             "resize",
@@ -381,20 +486,8 @@ class PetWorldGame {
             }
         );
 
-        window.addEventListener(
-            "beforeunload",
-            () => {
-
-                this.saveGame();
-
-            }
-        );
-
     }
 
-    // =================================================
-    // RESIZE
-    // =================================================
 
     resize() {
 
@@ -402,157 +495,169 @@ class PetWorldGame {
             !this.camera ||
             !this.renderer
         ) {
+
             return;
+
         }
 
-        const width =
-            window.innerWidth;
-
-        const height =
-            window.innerHeight;
 
         this.camera.aspect =
-            width / height;
+            window.innerWidth /
+            window.innerHeight;
+
 
         this.camera.updateProjectionMatrix();
 
+
         this.renderer.setSize(
-            width,
-            height
+            window.innerWidth,
+            window.innerHeight
         );
 
-    }
 
-    // =================================================
-    // START GAME
-    // =================================================
+        this.renderer.setPixelRatio(
+            Math.min(
+                window.devicePixelRatio,
+                1.5
+            )
+        );
 
-    start() {
 
-        if (this.running) {
-            return;
+        if (
+            this.mobile
+        ) {
+
+            this.mobile.resize();
+
         }
 
-        this.running = true;
+    }
 
-        this.lastTime =
-            performance.now();
 
-        this.animate();
+    // =================================================
+    // UPDATE
+    // =================================================
+
+    update(
+        delta
+    ) {
+
+        this.elapsed +=
+            delta;
+
+
+        if (
+            this.world
+        ) {
+
+            this.world.update(
+                delta,
+                this.elapsed
+            );
+
+        }
+
+
+        if (
+            this.player
+        ) {
+
+            this.player.update(
+                delta,
+                this.elapsed
+            );
+
+        }
+
+
+        if (
+            this.creatures
+        ) {
+
+            this.creatures.update(
+                delta,
+                this.elapsed
+            );
+
+        }
+
+
+        if (
+            this.systems
+        ) {
+
+            this.systems.update(
+                delta,
+                this.elapsed
+            );
+
+        }
+
+
+        if (
+            this.mobile
+        ) {
+
+            this.mobile.update();
+
+        }
+
+
+        if (
+            this.ui
+        ) {
+
+            this.ui.update(
+                delta
+            );
+
+        }
 
     }
 
+
     // =================================================
-    // MAIN GAME LOOP
+    // GAME LOOP
     // =================================================
 
     animate() {
 
-        if (!this.running) {
+        if (
+            !this.running
+        ) {
+
             return;
+
         }
 
+
         requestAnimationFrame(
-            () => this.animate()
+            () => {
+
+                this.animate();
+
+            }
         );
 
-        const delta =
+
+        let delta =
+            this.clock.getDelta();
+
+
+        // Prevent huge physics jumps
+        // when browser tab is inactive.
+
+        delta =
             Math.min(
-                this.clock.getDelta(),
+                delta,
                 0.05
             );
 
-        const elapsed =
-            this.clock.elapsedTime;
 
+        this.update(
+            delta
+        );
 
-        // ---------------------------------------------
-        // WORLD UPDATE
-        // ---------------------------------------------
-
-        if (this.world) {
-
-            this.world.update(
-                delta,
-                elapsed
-            );
-
-        }
-
-
-        // ---------------------------------------------
-        // PLAYER UPDATE
-        // ---------------------------------------------
-
-        if (this.player) {
-
-            this.player.update(
-                delta,
-                elapsed
-            );
-
-        }
-
-
-        // ---------------------------------------------
-        // CREATURE UPDATE
-        // ---------------------------------------------
-
-        if (this.creatures) {
-
-            this.creatures.update(
-                delta,
-                elapsed
-            );
-
-        }
-
-
-        // ---------------------------------------------
-        // GAME SYSTEMS
-        // ---------------------------------------------
-
-        if (this.systems) {
-
-            this.systems.update(
-                delta,
-                elapsed
-            );
-
-        }
-
-
-        // ---------------------------------------------
-        // UI
-        // ---------------------------------------------
-
-        if (this.ui) {
-
-            this.ui.update(
-                delta,
-                elapsed
-            );
-
-        }
-
-
-        // ---------------------------------------------
-        // MOBILE
-        // ---------------------------------------------
-
-        if (this.mobile) {
-
-            this.mobile.update(
-                delta,
-                elapsed
-            );
-
-        }
-
-
-        // ---------------------------------------------
-        // RENDER
-        // ---------------------------------------------
 
         this.renderer.render(
             this.scene,
@@ -561,169 +666,40 @@ class PetWorldGame {
 
     }
 
-    // =================================================
-    // LOADING
-    // =================================================
-
-    updateLoading(
-        percent,
-        text
-    ) {
-
-        this.loadingProgress =
-            percent;
-
-        const progress =
-            document.getElementById(
-                "loadingProgress"
-            );
-
-        const loadingText =
-            document.getElementById(
-                "loadingText"
-            );
-
-        const loadingPercent =
-            document.getElementById(
-                "loadingPercent"
-            );
-
-        if (progress) {
-
-            progress.style.width =
-                `${percent}%`;
-
-        }
-
-        if (loadingText) {
-
-            loadingText.textContent =
-                text;
-
-        }
-
-        if (loadingPercent) {
-
-            loadingPercent.textContent =
-                `${percent}%`;
-
-        }
-
-    }
 
     // =================================================
-    // HIDE LOADING
-    // =================================================
-
-    hideLoadingScreen() {
-
-        const loading =
-            document.getElementById(
-                "loadingScreen"
-            );
-
-        if (!loading) {
-            return;
-        }
-
-        loading.style.opacity =
-            "0";
-
-        loading.style.transition =
-            "opacity 0.5s ease";
-
-        setTimeout(() => {
-
-            loading.classList.add(
-                "hidden"
-            );
-
-        }, 500);
-
-    }
-
-    // =================================================
-    // ERROR
-    // =================================================
-
-    showError(message) {
-
-        const loading =
-            document.getElementById(
-                "loadingScreen"
-            );
-
-        if (loading) {
-
-            loading.classList.add(
-                "hidden"
-            );
-
-        }
-
-        const errorScreen =
-            document.getElementById(
-                "errorScreen"
-            );
-
-        const errorMessage =
-            document.getElementById(
-                "errorMessage"
-            );
-
-        if (errorMessage) {
-
-            errorMessage.textContent =
-                message;
-
-        }
-
-        if (errorScreen) {
-
-            errorScreen.classList.remove(
-                "hidden"
-            );
-
-        }
-
-    }
-
-    // =================================================
-    // SAVE GAME
-    // =================================================
-
-    saveGame() {
-
-        try {
-
-            if (
-                this.systems &&
-                typeof this.systems.saveGame ===
-                    "function"
-            ) {
-
-                this.systems.saveGame();
-
-            }
-
-        } catch (error) {
-
-            console.error(
-                "Save error:",
-                error
-            );
-
-        }
-
-    }
-
-    // =================================================
-    // STOP GAME
+    // STOP
     // =================================================
 
     stop() {
 
-        this.running = false;
+        this.running =
+            false;
+
+    }
+
+
+    // =================================================
+    // START
+    // =================================================
+
+    start() {
+
+        if (
+            this.running
+        ) {
+
+            return;
+
+        }
+
+
+        this.running =
+            true;
+
+        this.clock.start();
+
+        this.animate();
 
     }
 
@@ -734,5 +710,80 @@ class PetWorldGame {
 // START GAME
 // =====================================================
 
-window.petWorld =
-    new PetWorldGame();
+window.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+
+        try {
+
+            const game =
+                new Game();
+
+
+            window.petWorldGame =
+                game;
+
+
+            await game.init();
+
+
+            console.log(
+                "PET WORLD started successfully."
+            );
+
+        } catch (
+            error
+        ) {
+
+            console.error(
+                "Game initialization failed:",
+                error
+            );
+
+
+            const message =
+                document.createElement(
+                    "div"
+                );
+
+
+            message.style.position =
+                "fixed";
+
+            message.style.left =
+                "20px";
+
+            message.style.right =
+                "20px";
+
+            message.style.top =
+                "20px";
+
+            message.style.padding =
+                "20px";
+
+            message.style.background =
+                "rgba(120,0,0,0.9)";
+
+            message.style.color =
+                "white";
+
+            message.style.zIndex =
+                "99999";
+
+            message.style.fontFamily =
+                "Arial, sans-serif";
+
+
+            message.textContent =
+                "Game failed to start. Check the browser console for details.";
+
+
+            document.body.appendChild(
+                message
+            );
+
+        }
+
+    }
+);
