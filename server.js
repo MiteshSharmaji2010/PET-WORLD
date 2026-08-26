@@ -1,355 +1,231 @@
+"use strict";
+
 const express = require("express");
-const http = require("http");
 const path = require("path");
-const { Server } = require("socket.io");
+const http = require("http");
 
 const app = express();
+
 const server = http.createServer(app);
-const io = new Server(server);
 
-const PORT = process.env.PORT || 3000;
+const PORT =
+    process.env.PORT || 3000;
 
-// --------------------------------------------------
-// BASIC SERVER SETTINGS
-// --------------------------------------------------
 
-app.use(express.json({ limit: "5mb" }));
+// =====================================================
+// SECURITY / BASIC SETTINGS
+// =====================================================
+
+app.disable("x-powered-by");
+
+
+// =====================================================
+// STATIC FILES
+// =====================================================
+
+const publicPath =
+    path.join(
+        __dirname,
+        "public"
+    );
+
 
 app.use(
     express.static(
-        path.join(__dirname, "public")
+        publicPath,
+        {
+            extensions: [
+                "html"
+            ],
+
+            maxAge:
+                process.env.NODE_ENV ===
+                "production"
+                    ? "1d"
+                    : 0
+        }
     )
 );
 
-// --------------------------------------------------
-// HOME PAGE
-// --------------------------------------------------
 
-app.get("/", (req, res) => {
-    res.sendFile(
-        path.join(
-            __dirname,
-            "public",
-            "index.html"
-        )
-    );
-});
+// =====================================================
+// HEALTH CHECK
+// =====================================================
 
-// --------------------------------------------------
-// SERVER STATUS
-// --------------------------------------------------
+app.get(
+    "/health",
+    (req, res) => {
 
-app.get("/health", (req, res) => {
+        res.status(200).json({
 
-    res.json({
-        success: true,
-        game: "PET WORLD",
-        server: "online",
-        players: io.engine.clientsCount,
-        time: new Date().toISOString()
-    });
+            status:
+                "ok",
 
-});
+            game:
+                "PET WORLD",
 
-// --------------------------------------------------
-// PLAYER DATA
-// --------------------------------------------------
+            server:
+                "running",
 
-const players = new Map();
+            time:
+                new Date().toISOString()
 
-function createPlayer(socketId) {
+        });
 
-    return {
+    }
+);
 
-        id: socketId,
 
-        name: "Player",
+// =====================================================
+// GAME ROUTE
+// =====================================================
 
-        position: {
-            x: 0,
-            y: 2,
-            z: 0
-        },
+app.get(
+    "/",
+    (req, res) => {
 
-        rotation: {
-            x: 0,
-            y: 0,
-            z: 0
-        },
-
-        health: 100,
-
-        stamina: 100,
-
-        level: 1,
-
-        experience: 0,
-
-        inventory: [],
-
-        pets: [],
-
-        connectedAt: Date.now()
-
-    };
-
-}
-
-// --------------------------------------------------
-// MULTIPLAYER CONNECTION
-// --------------------------------------------------
-
-io.on("connection", (socket) => {
-
-    console.log(
-        `Player connected: ${socket.id}`
-    );
-
-    const player =
-        createPlayer(socket.id);
-
-    players.set(
-        socket.id,
-        player
-    );
-
-    // ------------------------------------------------
-    // SEND PLAYER INFORMATION
-    // ------------------------------------------------
-
-    socket.emit(
-        "playerJoined",
-        player
-    );
-
-    // ------------------------------------------------
-    // SEND ALL OTHER PLAYERS
-    // ------------------------------------------------
-
-    const otherPlayers =
-        Array.from(
-            players.values()
-        ).filter(
-            p => p.id !== socket.id
+        res.sendFile(
+            path.join(
+                publicPath,
+                "index.html"
+            )
         );
 
-    socket.emit(
-        "existingPlayers",
-        otherPlayers
-    );
+    }
+);
 
-    // ------------------------------------------------
-    // INFORM OTHER PLAYERS
-    // ------------------------------------------------
 
-    socket.broadcast.emit(
-        "playerConnected",
-        player
-    );
+// =====================================================
+// 404 HANDLER
+// =====================================================
 
-    // ------------------------------------------------
-    // PLAYER MOVEMENT
-    // ------------------------------------------------
+app.use(
+    (req, res) => {
 
-    socket.on(
-        "playerMovement",
-        (data) => {
+        res.status(404).send(
+            `
+            <!DOCTYPE html>
 
-            const currentPlayer =
-                players.get(socket.id);
+            <html>
 
-            if (!currentPlayer) {
-                return;
-            }
+            <head>
 
-            if (
-                !data ||
-                !data.position
-            ) {
-                return;
-            }
+                <meta charset="UTF-8">
 
-            // Basic server-side validation
+                <meta
+                    name="viewport"
+                    content="width=device-width,initial-scale=1"
+                >
 
-            const x =
-                Number(data.position.x);
+                <title>PET WORLD - 404</title>
 
-            const y =
-                Number(data.position.y);
+                <style>
 
-            const z =
-                Number(data.position.z);
+                    body {
+                        margin: 0;
+                        min-height: 100vh;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        background: #10161a;
+                        color: white;
+                        font-family: Arial, sans-serif;
+                        text-align: center;
+                    }
 
-            if (
-                !Number.isFinite(x) ||
-                !Number.isFinite(y) ||
-                !Number.isFinite(z)
-            ) {
-                return;
-            }
+                    .box {
+                        padding: 30px;
+                    }
 
-            currentPlayer.position = {
-                x,
-                y,
-                z
-            };
+                    h1 {
+                        font-size: 48px;
+                        margin-bottom: 10px;
+                    }
 
-            if (data.rotation) {
+                    a {
+                        color: #75e08a;
+                        text-decoration: none;
+                    }
 
-                currentPlayer.rotation = {
+                </style>
 
-                    x:
-                        Number(data.rotation.x) || 0,
+            </head>
 
-                    y:
-                        Number(data.rotation.y) || 0,
+            <body>
 
-                    z:
-                        Number(data.rotation.z) || 0
+                <div class="box">
 
-                };
+                    <h1>404</h1>
 
-            }
+                    <p>
+                        This PET WORLD page does not exist.
+                    </p>
 
-            socket.broadcast.emit(
-                "playerMoved",
-                {
-                    id: socket.id,
+                    <a href="/">
+                        Return to Game
+                    </a>
 
-                    position:
-                        currentPlayer.position,
+                </div>
 
-                    rotation:
-                        currentPlayer.rotation
-                }
+            </body>
+
+            </html>
+            `
+        );
+
+    }
+);
+
+
+// =====================================================
+// ERROR HANDLER
+// =====================================================
+
+app.use(
+    (
+        error,
+        req,
+        res,
+        next
+    ) => {
+
+        console.error(
+            "Server error:",
+            error
+        );
+
+
+        if (
+            res.headersSent
+        ) {
+
+            return next(
+                error
             );
 
         }
-    );
 
-    // ------------------------------------------------
-    // PLAYER NAME
-    // ------------------------------------------------
 
-    socket.on(
-        "setPlayerName",
-        (name) => {
+        res.status(500).json({
 
-            const currentPlayer =
-                players.get(socket.id);
+            error:
+                "Internal server error",
 
-            if (!currentPlayer) {
-                return;
-            }
+            message:
+                process.env.NODE_ENV ===
+                "production"
+                    ? "Something went wrong."
+                    : error.message
 
-            if (
-                typeof name !== "string"
-            ) {
-                return;
-            }
+        });
 
-            name =
-                name
-                    .trim()
-                    .slice(0, 20);
+    }
+);
 
-            if (!name) {
-                return;
-            }
 
-            currentPlayer.name =
-                name;
-
-            io.emit(
-                "playerNameChanged",
-                {
-                    id: socket.id,
-                    name
-                }
-            );
-
-        }
-    );
-
-    // ------------------------------------------------
-    // CHAT
-    // ------------------------------------------------
-
-    socket.on(
-        "chatMessage",
-        (message) => {
-
-            if (
-                typeof message !==
-                "string"
-            ) {
-                return;
-            }
-
-            message =
-                message
-                    .trim()
-                    .slice(0, 200);
-
-            if (!message) {
-                return;
-            }
-
-            const currentPlayer =
-                players.get(socket.id);
-
-            if (!currentPlayer) {
-                return;
-            }
-
-            io.emit(
-                "chatMessage",
-                {
-                    playerId:
-                        socket.id,
-
-                    playerName:
-                        currentPlayer.name,
-
-                    message,
-
-                    time:
-                        Date.now()
-                }
-            );
-
-        }
-    );
-
-    // ------------------------------------------------
-    // DISCONNECT
-    // ------------------------------------------------
-
-    socket.on(
-        "disconnect",
-        () => {
-
-            console.log(
-                `Player disconnected: ${socket.id}`
-            );
-
-            players.delete(
-                socket.id
-            );
-
-            io.emit(
-                "playerDisconnected",
-                socket.id
-            );
-
-        }
-    );
-
-});
-
-// --------------------------------------------------
-// SERVER START
-// --------------------------------------------------
+// =====================================================
+// START SERVER
+// =====================================================
 
 server.listen(
     PORT,
@@ -357,30 +233,142 @@ server.listen(
 
         console.log("");
         console.log(
-            "===================================="
+            "======================================"
         );
 
         console.log(
-            "          PET WORLD"
+            "        PET WORLD SERVER"
         );
 
         console.log(
-            "      GAME SERVER ONLINE"
+            "======================================"
         );
 
         console.log(
-            "===================================="
+            `Game: http://localhost:${PORT}`
         );
 
         console.log(
-            `Server: http://localhost:${PORT}`
+            `Health: http://localhost:${PORT}/health`
         );
 
         console.log(
-            "===================================="
+            `Environment: ${
+                process.env.NODE_ENV ||
+                "development"
+            }`
+        );
+
+        console.log(
+            "======================================"
         );
 
         console.log("");
+
+    }
+);
+
+
+// =====================================================
+// SERVER ERROR
+// =====================================================
+
+server.on(
+    "error",
+    error => {
+
+        if (
+            error.code ===
+            "EADDRINUSE"
+        ) {
+
+            console.error(
+                `Port ${PORT} is already in use.`
+            );
+
+            console.error(
+                "Close the other server or use another PORT."
+            );
+
+        } else {
+
+            console.error(
+                "Server startup error:",
+                error
+            );
+
+        }
+
+
+        process.exit(
+            1
+        );
+
+    }
+);
+
+
+// =====================================================
+// GRACEFUL SHUTDOWN
+// =====================================================
+
+function shutdown(
+    signal
+) {
+
+    console.log(
+        `${signal} received. Shutting down...`
+    );
+
+
+    server.close(
+        () => {
+
+            console.log(
+                "Server stopped."
+            );
+
+            process.exit(
+                0
+            );
+
+        }
+    );
+
+
+    setTimeout(
+        () => {
+
+            process.exit(
+                1
+            );
+
+        },
+        5000
+    );
+
+}
+
+
+process.on(
+    "SIGINT",
+    () => {
+
+        shutdown(
+            "SIGINT"
+        );
+
+    }
+);
+
+
+process.on(
+    "SIGTERM",
+    () => {
+
+        shutdown(
+            "SIGTERM"
+        );
 
     }
 );
