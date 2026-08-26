@@ -6,82 +6,53 @@ export class World {
 
         this.game = game;
 
-        this.scene = game.scene;
-
-        this.time = 8;
-
-        this.dayLength = 900;
+        this.group =
+            new THREE.Group();
 
         this.worldSize = 500;
 
-        this.waterLevel = 0;
+        this.waterLevel = -0.8;
 
-        this.objects = [];
+        this.time = 8;
 
-        this.trees = [];
+        this.dayLength = 600;
 
-        this.rocks = [];
+        this.terrain = null;
 
-        this.grass = [];
+        this.water = null;
 
-        this.clouds = [];
+        this.sun = null;
 
-        this.isNight = false;
+        this.moon = null;
+
+        this.decorations = [];
 
     }
 
 
     // =================================================
-    // INITIALIZE WORLD
+    // INITIALIZE
     // =================================================
 
     async init() {
 
-        this.createSky();
+        this.game.scene.add(
+            this.group
+        );
 
         this.createTerrain();
 
         this.createWater();
 
-        this.createEnvironment();
+        this.createMountains();
 
-        this.createClouds();
+        this.createTrees();
 
-        this.createSpawnArea();
+        this.createRocks();
 
-        return true;
+        this.createLighting();
 
-    }
-
-
-    // =================================================
-    // SKY
-    // =================================================
-
-    createSky() {
-
-        this.sky = new THREE.Mesh(
-
-            new THREE.SphereGeometry(
-                600,
-                32,
-                16
-            ),
-
-            new THREE.MeshBasicMaterial({
-
-                color: 0x87a8b5,
-
-                side:
-                    THREE.BackSide
-
-            })
-
-        );
-
-        this.scene.add(
-            this.sky
-        );
+        this.createSky();
 
     }
 
@@ -92,21 +63,20 @@ export class World {
 
     createTerrain() {
 
-        const size =
-            this.worldSize;
-
-        const segments = 120;
+        const segments = 150;
 
         const geometry =
             new THREE.PlaneGeometry(
-                size,
-                size,
+                this.worldSize,
+                this.worldSize,
                 segments,
                 segments
             );
 
+
         const position =
             geometry.attributes.position;
+
 
         for (
             let i = 0;
@@ -120,11 +90,13 @@ export class World {
             const y =
                 position.getY(i);
 
+
             const height =
                 this.getTerrainHeight(
                     x,
                     y
                 );
+
 
             position.setZ(
                 i,
@@ -133,12 +105,14 @@ export class World {
 
         }
 
+
         geometry.computeVertexNormals();
+
 
         const material =
             new THREE.MeshStandardMaterial({
 
-                color: 0x526f48,
+                color: 0x496b3c,
 
                 roughness: 1,
 
@@ -146,23 +120,23 @@ export class World {
 
             });
 
+
         this.terrain =
             new THREE.Mesh(
                 geometry,
                 material
             );
 
+
         this.terrain.rotation.x =
             -Math.PI / 2;
+
 
         this.terrain.receiveShadow =
             true;
 
-        this.scene.add(
-            this.terrain
-        );
 
-        this.objects.push(
+        this.group.add(
             this.terrain
         );
 
@@ -178,51 +152,41 @@ export class World {
         z
     ) {
 
-        const largeWave =
+        const large =
             Math.sin(x * 0.018) *
-            4;
+            Math.cos(z * 0.015) *
+            9;
 
-        const secondWave =
-            Math.cos(z * 0.025) *
+
+        const medium =
+            Math.sin(x * 0.055 + 2) *
+            Math.cos(z * 0.045) *
             3;
 
-        const smallWave =
-            Math.sin(
-                x * 0.07 +
-                z * 0.04
-            ) * 1.2;
+
+        const small =
+            Math.sin(x * 0.15) *
+            Math.cos(z * 0.13) *
+            0.6;
+
 
         const mountain =
-            Math.sin(x * 0.009) *
-            Math.cos(z * 0.011) *
-            10;
-
-        const distance =
-            Math.sqrt(
-                x * x +
-                z * z
+            Math.max(
+                0,
+                1 -
+                Math.sqrt(
+                    x * x +
+                    z * z
+                ) / 230
             );
 
-        let height =
-            largeWave +
-            secondWave +
-            smallWave +
-            mountain;
 
-        // Keep spawn area relatively flat
-
-        if (
-            distance < 35
-        ) {
-
-            const factor =
-                distance / 35;
-
-            height *= factor;
-
-        }
-
-        return height;
+        return (
+            large +
+            medium +
+            small +
+            mountain * 4
+        ) - 2;
 
     }
 
@@ -239,10 +203,11 @@ export class World {
                 this.worldSize
             );
 
+
         const material =
             new THREE.MeshStandardMaterial({
 
-                color: 0x397b8c,
+                color: 0x247c91,
 
                 transparent: true,
 
@@ -250,9 +215,10 @@ export class World {
 
                 roughness: 0.15,
 
-                metalness: 0.05
+                metalness: 0.25
 
             });
+
 
         this.water =
             new THREE.Mesh(
@@ -260,16 +226,16 @@ export class World {
                 material
             );
 
+
         this.water.rotation.x =
             -Math.PI / 2;
+
 
         this.water.position.y =
             this.waterLevel;
 
-        this.water.receiveShadow =
-            true;
 
-        this.scene.add(
+        this.group.add(
             this.water
         );
 
@@ -277,16 +243,97 @@ export class World {
 
 
     // =================================================
-    // ENVIRONMENT
+    // MOUNTAINS
     // =================================================
 
-    createEnvironment() {
+    createMountains() {
 
-        this.createTrees();
+        const material =
+            new THREE.MeshStandardMaterial({
 
-        this.createRocks();
+                color: 0x3f5047,
 
-        this.createGrass();
+                roughness: 1
+
+            });
+
+
+        for (
+            let i = 0;
+            i < 22;
+            i++
+        ) {
+
+            const angle =
+                (i / 22) *
+                Math.PI *
+                2;
+
+
+            const radius =
+                210 +
+                Math.random() *
+                35;
+
+
+            const height =
+                30 +
+                Math.random() *
+                55;
+
+
+            const radiusX =
+                20 +
+                Math.random() *
+                25;
+
+
+            const geometry =
+                new THREE.ConeGeometry(
+                    radiusX,
+                    height,
+                    8
+                );
+
+
+            const mountain =
+                new THREE.Mesh(
+                    geometry,
+                    material
+                );
+
+
+            mountain.position.set(
+
+                Math.cos(angle) *
+                    radius,
+
+                height / 2 - 2,
+
+                Math.sin(angle) *
+                    radius
+
+            );
+
+
+            mountain.rotation.y =
+                Math.random() *
+                Math.PI;
+
+
+            mountain.castShadow =
+                true;
+
+
+            mountain.receiveShadow =
+                true;
+
+
+            this.group.add(
+                mountain
+            );
+
+        }
 
     }
 
@@ -297,15 +344,90 @@ export class World {
 
     createTrees() {
 
-        const count = 150;
+        const treeCount = 220;
+
+
+        for (
+            let i = 0;
+            i < treeCount;
+            i++
+        ) {
+
+            const x =
+                (Math.random() - 0.5) *
+                450;
+
+
+            const z =
+                (Math.random() - 0.5) *
+                450;
+
+
+            const distance =
+                Math.sqrt(
+                    x * x +
+                    z * z
+                );
+
+
+            if (
+                distance < 25
+            ) {
+
+                continue;
+
+            }
+
+
+            const y =
+                this.getTerrainHeight(
+                    x,
+                    z
+                );
+
+
+            if (
+                y < this.waterLevel + 0.5
+            ) {
+
+                continue;
+
+            }
+
+
+            this.createTree(
+                x,
+                y,
+                z
+            );
+
+        }
+
+    }
+
+
+    // =================================================
+    // TREE
+    // =================================================
+
+    createTree(
+        x,
+        y,
+        z
+    ) {
+
+        const tree =
+            new THREE.Group();
+
 
         const trunkGeometry =
             new THREE.CylinderGeometry(
-                0.35,
-                0.55,
-                4,
-                7
+                0.28,
+                0.4,
+                3,
+                8
             );
+
 
         const trunkMaterial =
             new THREE.MeshStandardMaterial({
@@ -316,133 +438,105 @@ export class World {
 
             });
 
+
+        const trunk =
+            new THREE.Mesh(
+                trunkGeometry,
+                trunkMaterial
+            );
+
+
+        trunk.position.y =
+            1.5;
+
+
+        trunk.castShadow =
+            true;
+
+
+        trunk.receiveShadow =
+            true;
+
+
+        tree.add(
+            trunk
+        );
+
+
         const leafGeometry =
             new THREE.ConeGeometry(
-                2.5,
-                5,
+                1.8,
+                4,
                 8
             );
+
 
         const leafMaterial =
             new THREE.MeshStandardMaterial({
 
-                color: 0x355b37,
+                color: 0x315b35,
 
                 roughness: 1
 
             });
 
 
-        for (
-            let i = 0;
-            i < count;
-            i++
-        ) {
-
-            const angle =
-                Math.random() *
-                Math.PI *
-                2;
-
-            const distance =
-                45 +
-                Math.random() *
-                190;
-
-            const x =
-                Math.cos(angle) *
-                distance;
-
-            const z =
-                Math.sin(angle) *
-                distance;
-
-            const y =
-                this.getTerrainHeight(
-                    x,
-                    z
-                );
-
-
-            // Avoid water
-
-            if (
-                y < this.waterLevel + 1
-            ) {
-
-                continue;
-
-            }
-
-
-            const group =
-                new THREE.Group();
-
-
-            const trunk =
-                new THREE.Mesh(
-                    trunkGeometry,
-                    trunkMaterial
-                );
-
-            trunk.position.y =
-                2;
-
-            trunk.castShadow =
-                true;
-
-            trunk.receiveShadow =
-                true;
-
-
-            const leaves =
-                new THREE.Mesh(
-                    leafGeometry,
-                    leafMaterial
-                );
-
-            leaves.position.y =
-                5;
-
-            leaves.castShadow =
-                true;
-
-
-            group.add(
-                trunk
-            );
-
-            group.add(
-                leaves
+        const leaves =
+            new THREE.Mesh(
+                leafGeometry,
+                leafMaterial
             );
 
 
-            const scale =
-                0.75 +
-                Math.random() *
-                0.8;
-
-            group.scale.setScalar(
-                scale
-            );
+        leaves.position.y =
+            4;
 
 
-            group.position.set(
-                x,
-                y,
-                z
-            );
+        leaves.castShadow =
+            true;
 
 
-            this.scene.add(
-                group
-            );
+        leaves.receiveShadow =
+            true;
 
-            this.trees.push(
-                group
-            );
 
-        }
+        tree.add(
+            leaves
+        );
+
+
+        const scale =
+            0.75 +
+            Math.random() *
+            0.8;
+
+
+        tree.scale.setScalar(
+            scale
+        );
+
+
+        tree.position.set(
+            x,
+            y,
+            z
+        );
+
+
+        tree.rotation.y =
+            Math.random() *
+            Math.PI *
+            2;
+
+
+        this.group.add(
+            tree
+        );
+
+
+        this.decorations.push(
+            tree
+        );
 
     }
 
@@ -453,18 +547,13 @@ export class World {
 
     createRocks() {
 
-        const count = 110;
+        const rockCount = 140;
 
-        const geometry =
-            new THREE.DodecahedronGeometry(
-                1,
-                0
-            );
 
         const material =
             new THREE.MeshStandardMaterial({
 
-                color: 0x666963,
+                color: 0x777873,
 
                 roughness: 1
 
@@ -473,27 +562,19 @@ export class World {
 
         for (
             let i = 0;
-            i < count;
+            i < rockCount;
             i++
         ) {
 
-            const angle =
-                Math.random() *
-                Math.PI *
-                2;
-
-            const distance =
-                20 +
-                Math.random() *
-                220;
-
             const x =
-                Math.cos(angle) *
-                distance;
+                (Math.random() - 0.5) *
+                450;
+
 
             const z =
-                Math.sin(angle) *
-                distance;
+                (Math.random() - 0.5) *
+                450;
+
 
             const y =
                 this.getTerrainHeight(
@@ -503,13 +584,25 @@ export class World {
 
 
             if (
-                y <
-                this.waterLevel - 0.5
+                y < this.waterLevel
             ) {
 
                 continue;
 
             }
+
+
+            const size =
+                0.3 +
+                Math.random() *
+                1.5;
+
+
+            const geometry =
+                new THREE.DodecahedronGeometry(
+                    size,
+                    0
+                );
 
 
             const rock =
@@ -519,47 +612,39 @@ export class World {
                 );
 
 
-            const scale =
-                0.5 +
-                Math.random() *
-                1.7;
-
-            rock.scale.set(
-                scale,
-                scale *
-                    (0.6 +
-                    Math.random() *
-                    0.5),
-                scale
-            );
-
-
             rock.position.set(
                 x,
-                y +
-                    scale *
-                    0.25,
+                y + size * 0.35,
                 z
             );
 
 
-            rock.rotation.y =
+            rock.scale.y =
+                0.6 +
                 Math.random() *
-                Math.PI;
+                0.6;
+
+
+            rock.rotation.set(
+
+                Math.random(),
+
+                Math.random(),
+
+                Math.random()
+
+            );
 
 
             rock.castShadow =
                 true;
 
+
             rock.receiveShadow =
                 true;
 
 
-            this.scene.add(
-                rock
-            );
-
-            this.rocks.push(
+            this.group.add(
                 rock
             );
 
@@ -569,303 +654,85 @@ export class World {
 
 
     // =================================================
-    // GRASS
+    // SKY
     // =================================================
 
-    createGrass() {
+    createSky() {
 
-        const count = 450;
-
-        const geometry =
-            new THREE.BufferGeometry();
-
-        const positions = [];
-
-        for (
-            let i = 0;
-            i < count;
-            i++
-        ) {
-
-            const x =
-                (Math.random() -
-                    0.5) *
-                this.worldSize;
-
-            const z =
-                (Math.random() -
-                    0.5) *
-                this.worldSize;
-
-            const y =
-                this.getTerrainHeight(
-                    x,
-                    z
-                );
-
-            if (
-                y <
-                this.waterLevel + 0.4
-            ) {
-
-                continue;
-
-            }
-
-            positions.push(
-                x,
-                y,
-                z
-            );
-
-        }
-
-        geometry.setAttribute(
-
-            "position",
-
-            new THREE.Float32BufferAttribute(
-                positions,
-                3
-            )
-
-        );
-
-
-        const material =
-            new THREE.PointsMaterial({
-
-                color: 0x73935f,
-
-                size: 0.35,
-
-                sizeAttenuation: true
-
-            });
-
-
-        const grass =
-            new THREE.Points(
-                geometry,
-                material
+        const skyGeometry =
+            new THREE.SphereGeometry(
+                480,
+                32,
+                16
             );
 
 
-        this.scene.add(
-            grass
-        );
-
-        this.grass.push(
-            grass
-        );
-
-    }
-
-
-    // =================================================
-    // CLOUDS
-    // =================================================
-
-    createClouds() {
-
-        const cloudMaterial =
+        const skyMaterial =
             new THREE.MeshBasicMaterial({
 
-                color: 0xffffff,
+                color: 0x83a9c0,
 
-                transparent: true,
-
-                opacity: 0.45
-
-            });
-
-
-        for (
-            let i = 0;
-            i < 18;
-            i++
-        ) {
-
-            const cloud =
-                new THREE.Group();
-
-
-            for (
-                let j = 0;
-                j < 5;
-                j++
-            ) {
-
-                const geometry =
-                    new THREE.SphereGeometry(
-                        5 +
-                        Math.random() * 4,
-                        8,
-                        8
-                    );
-
-
-                const part =
-                    new THREE.Mesh(
-                        geometry,
-                        cloudMaterial
-                    );
-
-
-                part.position.set(
-
-                    j * 5,
-
-                    Math.random() * 2,
-
-                    Math.random() * 4
-
-                );
-
-
-                cloud.add(
-                    part
-                );
-
-            }
-
-
-            cloud.position.set(
-
-                -250 +
-                Math.random() *
-                500,
-
-                80 +
-                Math.random() *
-                35,
-
-                -250 +
-                Math.random() *
-                500
-
-            );
-
-
-            const scale =
-                0.7 +
-                Math.random() *
-                0.8;
-
-            cloud.scale.setScalar(
-                scale
-            );
-
-
-            this.scene.add(
-                cloud
-            );
-
-            this.clouds.push(
-                cloud
-            );
-
-        }
-
-    }
-
-
-    // =================================================
-    // PLAYER SPAWN AREA
-    // =================================================
-
-    createSpawnArea() {
-
-        const geometry =
-            new THREE.CircleGeometry(
-                32,
-                48
-            );
-
-        const material =
-            new THREE.MeshStandardMaterial({
-
-                color: 0x66875a,
-
-                transparent: true,
-
-                opacity: 0.15
+                side:
+                    THREE.BackSide
 
             });
 
 
-        const area =
+        const sky =
             new THREE.Mesh(
-                geometry,
-                material
+                skyGeometry,
+                skyMaterial
             );
 
 
-        area.rotation.x =
-            -Math.PI / 2;
-
-        area.position.y =
-            this.getTerrainHeight(
-                0,
-                0
-            ) + 0.05;
-
-
-        this.scene.add(
-            area
+        this.group.add(
+            sky
         );
 
+        this.sky =
+            sky;
+
     }
 
 
     // =================================================
-    // BIOME
+    // LIGHTING
     // =================================================
 
-    getBiome(
-        x,
-        z
-    ) {
+    createLighting() {
 
-        const distance =
-            Math.sqrt(
-                x * x +
-                z * z
+        this.sun =
+            new THREE.DirectionalLight(
+                0xffffff,
+                2
             );
 
-        if (
-            distance < 100
-        ) {
 
-            return "FOREST";
+        this.sun.castShadow =
+            true;
 
-        }
 
-        if (
-            x > 100
-        ) {
+        this.sun.shadow.mapSize.set(
+            1024,
+            1024
+        );
 
-            return "DESERT";
 
-        }
+        this.game.scene.add(
+            this.sun
+        );
 
-        if (
-            z < -120
-        ) {
 
-            return "SNOW";
+        this.moon =
+            new THREE.DirectionalLight(
+                0x8299d8,
+                0.15
+            );
 
-        }
 
-        if (
-            z > 130
-        ) {
-
-            return "SWAMP";
-
-        }
-
-        return "PLAINS";
+        this.game.scene.add(
+            this.moon
+        );
 
     }
 
@@ -874,12 +741,14 @@ export class World {
     // DAY / NIGHT
     // =================================================
 
-    updateTime(delta) {
+    update(
+        delta
+    ) {
 
         this.time +=
-            delta /
-            this.dayLength *
+            (delta / this.dayLength) *
             24;
+
 
         if (
             this.time >= 24
@@ -890,119 +759,109 @@ export class World {
         }
 
 
-        const sunAngle =
+        const angle =
             (
-                this.time - 6
-            ) /
-            24 *
+                this.time / 24
+            ) *
             Math.PI *
             2;
 
 
-        const sunDistance = 180;
+        const sunRadius =
+            150;
 
 
-        if (
-            this.game.sun
-        ) {
+        this.sun.position.set(
 
-            this.game.sun.position.set(
+            Math.cos(angle) *
+                sunRadius,
 
-                Math.cos(
-                    sunAngle
-                ) *
-                sunDistance,
+            Math.sin(angle) *
+                sunRadius,
 
-                Math.sin(
-                    sunAngle
-                ) *
-                sunDistance,
+            70
 
-                80
+        );
 
-            );
 
-        }
+        this.moon.position.set(
+
+            -Math.cos(angle) *
+                sunRadius,
+
+            -Math.sin(angle) *
+                sunRadius,
+
+            -70
+
+        );
 
 
         const daylight =
             Math.max(
-                0.08,
-                Math.sin(
-                    sunAngle
-                )
+                0,
+                Math.sin(angle)
             );
 
 
-        if (
-            this.game.sun
-        ) {
+        this.sun.intensity =
+            0.25 +
+            daylight * 1.8;
 
-            this.game.sun.intensity =
-                0.35 +
-                daylight *
-                2.3;
 
-        }
+        this.moon.intensity =
+            0.08 +
+            (1 - daylight) * 0.3;
 
 
         if (
-            this.game.moon
+            this.sky
         ) {
 
-            this.game.moon.intensity =
-                0.1 +
-                (1 - daylight) *
-                0.35;
+            const skyColor =
+                new THREE.Color();
+
+
+            skyColor.setHSL(
+
+                0.56,
+
+                0.28,
+
+                0.18 +
+                daylight * 0.28
+
+            );
+
+
+            this.sky.material.color.copy(
+                skyColor
+            );
 
         }
 
 
-        this.isNight =
-            this.time < 6 ||
-            this.time > 19;
+        // Fog changes with time.
 
-    }
-
-
-    // =================================================
-    // UPDATE
-    // =================================================
-
-    update(
-        delta,
-        elapsed
-    ) {
-
-        this.updateTime(
-            delta
-        );
-
-
-        // Move clouds
-
-        for (
-            const cloud
-            of this.clouds
+        if (
+            this.game.scene.fog
         ) {
 
-            cloud.position.x +=
-                delta * 0.7;
+            this.game.scene.fog.color.setHSL(
 
-            if (
-                cloud.position.x >
-                300
-            ) {
+                0.56,
 
-                cloud.position.x =
-                    -300;
+                0.18,
 
-            }
+                0.18 +
+                daylight * 0.25
+
+            );
 
         }
 
 
-        // Gentle water movement
+        // Small water movement.
 
         if (
             this.water
@@ -1011,59 +870,10 @@ export class World {
             this.water.position.y =
                 this.waterLevel +
                 Math.sin(
-                    elapsed *
-                    0.7
+                    this.game.elapsed *
+                    0.8
                 ) *
                 0.025;
-
-        }
-
-    }
-
-
-    // =================================================
-    // GET GROUND HEIGHT
-    // =================================================
-
-    getGroundHeight(
-        x,
-        z
-    ) {
-
-        return this.getTerrainHeight(
-            x,
-            z
-        );
-
-    }
-
-
-    // =================================================
-    // CLEANUP
-    // =================================================
-
-    dispose() {
-
-        for (
-            const object
-            of this.objects
-        ) {
-
-            if (
-                object.geometry
-            ) {
-
-                object.geometry.dispose();
-
-            }
-
-            if (
-                object.material
-            ) {
-
-                object.material.dispose();
-
-            }
 
         }
 
