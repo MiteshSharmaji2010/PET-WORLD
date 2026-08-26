@@ -1,1 +1,1396 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
 
+html,
+body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #050807;
+    color: #ffffff;
+    font-family: Arial, Helvetica, sans-serif;
+    touch-action: none;
+}
+
+body {
+    position: fixed;
+    inset: 0;
+}
+
+/* =========================================
+   GAME CONTAINER
+========================================= */
+
+#gameContainer {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #050807;
+}
+
+#gameContainer canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* =========================================
+   COMMON
+========================================= */
+
+.hidden {
+    display: none !important;
+}
+
+button,
+select,
+input {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+    color: white;
+}
+
+/* =========================================
+   LOADING SCREEN
+========================================= */
+
+#loadingScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background:
+        radial-gradient(
+            circle at center,
+            #1c3027 0%,
+            #0b120f 45%,
+            #030504 100%
+        );
+}
+
+.loadingContent {
+    width: min(90vw, 520px);
+    text-align: center;
+}
+
+.gameLogo {
+    font-size: clamp(42px, 10vw, 78px);
+    font-weight: 900;
+    letter-spacing: 7px;
+    text-shadow:
+        0 4px 20px rgba(0, 0, 0, 0.8);
+}
+
+.loadingSubtitle {
+    margin-top: 8px;
+    color: #a9b5ae;
+    font-size: 12px;
+    letter-spacing: 3px;
+}
+
+.loadingBar {
+    width: 100%;
+    height: 8px;
+    margin-top: 35px;
+
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.loadingProgress {
+    width: 0%;
+    height: 100%;
+
+    background: #d8e4dc;
+    border-radius: inherit;
+
+    transition: width 0.2s ease;
+}
+
+#loadingText {
+    margin-top: 14px;
+    color: #aeb9b2;
+    font-size: 13px;
+}
+
+.loadingPercent {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #738078;
+}
+
+/* =========================================
+   MAIN MENU
+========================================= */
+
+.screen {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+}
+
+#mainMenu {
+    background:
+        linear-gradient(
+            rgba(0, 0, 0, 0.3),
+            rgba(0, 0, 0, 0.75)
+        ),
+        radial-gradient(
+            circle at 50% 35%,
+            #294535,
+            #08100c 75%
+        );
+}
+
+.menuOverlay {
+    position: absolute;
+    inset: 0;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+}
+
+.menuLogo {
+    font-size: clamp(48px, 12vw, 100px);
+    font-weight: 900;
+    letter-spacing: 8px;
+
+    text-shadow:
+        0 5px 30px rgba(0, 0, 0, 0.9);
+}
+
+.menuTagline {
+    margin-top: 10px;
+    color: #aeb9b2;
+    font-size: 12px;
+    letter-spacing: 4px;
+}
+
+.menuButtons {
+    width: min(85vw, 300px);
+    margin-top: 45px;
+}
+
+.menuButton {
+    width: 100%;
+    min-height: 52px;
+
+    margin-top: 10px;
+
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+
+    background: rgba(0, 0, 0, 0.45);
+
+    font-weight: 700;
+    letter-spacing: 1px;
+
+    transition:
+        transform 0.15s ease,
+        background 0.15s ease;
+}
+
+.menuButton:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
+}
+
+.menuButton:active {
+    transform: scale(0.97);
+}
+
+.menuButton.primary {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* =========================================
+   GAME UI
+========================================= */
+
+#gameUI {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    pointer-events: none;
+}
+
+/* =========================================
+   PLAYER HUD
+========================================= */
+
+#playerHUD {
+    position: absolute;
+
+    top: max(12px, env(safe-area-inset-top));
+    left: max(12px, env(safe-area-inset-left));
+
+    width: min(300px, 48vw);
+
+    padding: 10px;
+
+    border-radius: 14px;
+
+    background: rgba(0, 0, 0, 0.48);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+
+    backdrop-filter: blur(8px);
+}
+
+.playerIdentity {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+
+    margin-bottom: 9px;
+}
+
+.playerAvatar {
+    width: 38px;
+    height: 38px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, 0.14);
+
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.playerName {
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.playerLevel {
+    margin-top: 2px;
+    color: #9ca8a1;
+    font-size: 9px;
+    letter-spacing: 1px;
+}
+
+.statBar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    height: 12px;
+    margin-top: 4px;
+}
+
+.statIcon {
+    width: 15px;
+    font-size: 10px;
+    text-align: center;
+}
+
+.statTrack {
+    flex: 1;
+    height: 6px;
+
+    overflow: hidden;
+
+    border-radius: 20px;
+
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.statFill {
+    height: 100%;
+    width: 100%;
+
+    border-radius: inherit;
+
+    transition: width 0.2s ease;
+}
+
+.healthBar .statFill {
+    background: #e65b52;
+}
+
+.staminaBar .statFill {
+    background: #e2bd48;
+}
+
+.hungerBar .statFill {
+    background: #d8914a;
+}
+
+.statText {
+    width: 55px;
+
+    color: #aeb7b2;
+
+    font-size: 8px;
+    text-align: right;
+}
+
+/* =========================================
+   TOP BUTTONS
+========================================= */
+
+#topButtons {
+    position: absolute;
+
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+
+    display: flex;
+    gap: 8px;
+}
+
+.hudButton {
+    width: 44px;
+    height: 44px;
+
+    pointer-events: auto;
+
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+
+    background: rgba(0, 0, 0, 0.48);
+
+    font-size: 18px;
+
+    backdrop-filter: blur(8px);
+}
+
+.hudButton:active {
+    transform: scale(0.92);
+}
+
+/* =========================================
+   WORLD INFO
+========================================= */
+
+#worldInfo {
+    position: absolute;
+
+    top: 72px;
+    right: 14px;
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 7px 10px;
+
+    border-radius: 10px;
+
+    background: rgba(0, 0, 0, 0.42);
+
+    backdrop-filter: blur(7px);
+}
+
+#timeIcon {
+    font-size: 18px;
+}
+
+.worldTime {
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.worldWeather {
+    margin-top: 2px;
+
+    color: #9ba69f;
+
+    font-size: 8px;
+    letter-spacing: 1px;
+}
+
+/* =========================================
+   CROSSHAIR
+========================================= */
+
+#crosshair {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    width: 22px;
+    height: 22px;
+
+    transform: translate(-50%, -50%);
+}
+
+.crosshairLine {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    background: rgba(255, 255, 255, 0.85);
+}
+
+.crosshairLine.horizontal {
+    width: 18px;
+    height: 1px;
+
+    transform: translate(-50%, -50%);
+}
+
+.crosshairLine.vertical {
+    width: 1px;
+    height: 18px;
+
+    transform: translate(-50%, -50%);
+}
+
+.crosshairDot {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    width: 3px;
+    height: 3px;
+
+    border-radius: 50%;
+
+    background: white;
+
+    transform: translate(-50%, -50%);
+}
+
+/* =========================================
+   TARGET INFO
+========================================= */
+
+#targetInfo {
+    position: absolute;
+
+    top: 17%;
+    left: 50%;
+
+    width: min(250px, 55vw);
+
+    transform: translateX(-50%);
+
+    padding: 9px 12px;
+
+    border-radius: 10px;
+
+    background: rgba(0, 0, 0, 0.55);
+
+    text-align: center;
+
+    backdrop-filter: blur(8px);
+}
+
+.targetName {
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.targetLevel {
+    margin-top: 3px;
+
+    color: #9ba69f;
+
+    font-size: 9px;
+}
+
+.targetHealth {
+    height: 5px;
+
+    margin-top: 7px;
+
+    overflow: hidden;
+
+    border-radius: 10px;
+
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.targetHealthFill {
+    width: 100%;
+    height: 100%;
+
+    background: #df5750;
+
+    border-radius: inherit;
+}
+
+/* =========================================
+   PET HUD
+========================================= */
+
+#petHUD {
+    position: absolute;
+
+    left: 14px;
+    bottom: 155px;
+
+    width: 170px;
+
+    padding: 8px;
+
+    border-radius: 11px;
+
+    background: rgba(0, 0, 0, 0.45);
+
+    backdrop-filter: blur(7px);
+}
+
+.petHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.petIcon {
+    width: 32px;
+    height: 32px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 8px;
+
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.petName {
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.petLevel {
+    margin-top: 2px;
+
+    color: #98a49d;
+
+    font-size: 8px;
+}
+
+.petHealth {
+    height: 4px;
+
+    margin-top: 7px;
+
+    overflow: hidden;
+
+    border-radius: 10px;
+
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.petHealthFill {
+    width: 100%;
+    height: 100%;
+
+    background: #69ad65;
+
+    border-radius: inherit;
+}
+
+/* =========================================
+   INTERACTION MESSAGE
+========================================= */
+
+#interactionMessage {
+    position: absolute;
+
+    left: 50%;
+    bottom: 30%;
+
+    transform: translateX(-50%);
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 8px 13px;
+
+    border-radius: 9px;
+
+    background: rgba(0, 0, 0, 0.6);
+
+    font-size: 11px;
+}
+
+/* =========================================
+   NOTIFICATIONS
+========================================= */
+
+#notificationContainer {
+    position: absolute;
+
+    top: 24%;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    width: min(300px, 80vw);
+}
+
+.notification {
+    padding: 9px 13px;
+
+    border-radius: 9px;
+
+    background: rgba(0, 0, 0, 0.68);
+
+    text-align: center;
+
+    font-size: 11px;
+
+    animation:
+        notificationIn 0.2s ease,
+        notificationOut 0.3s ease 2.7s forwards;
+}
+
+@keyframes notificationIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes notificationOut {
+    to {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+}
+
+/* =========================================
+   MOBILE JOYSTICK
+========================================= */
+
+#mobileJoystick {
+    position: absolute;
+
+    left: max(18px, env(safe-area-inset-left));
+    bottom: max(22px, env(safe-area-inset-bottom));
+
+    width: 150px;
+    height: 150px;
+
+    pointer-events: auto;
+}
+
+.joystickBase {
+    position: absolute;
+
+    left: 10px;
+    top: 10px;
+
+    width: 125px;
+    height: 125px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.joystickStick {
+    width: 55px;
+    height: 55px;
+
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, 0.24);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+
+    box-shadow:
+        0 4px 18px rgba(0, 0, 0, 0.3);
+}
+
+/* =========================================
+   MOBILE ACTION BUTTONS
+========================================= */
+
+#mobileActions {
+    position: absolute;
+
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(18px, env(safe-area-inset-bottom));
+
+    width: 210px;
+    height: 190px;
+}
+
+.actionButton {
+    position: absolute;
+
+    width: 52px;
+    height: 52px;
+
+    display: grid;
+    place-items: center;
+
+    pointer-events: auto;
+
+    border-radius: 50%;
+
+    border: 1px solid rgba(255, 255, 255, 0.2);
+
+    background: rgba(0, 0, 0, 0.52);
+
+    backdrop-filter: blur(7px);
+
+    font-size: 18px;
+
+    transition:
+        transform 0.1s ease,
+        background 0.1s ease;
+}
+
+.actionButton:active {
+    transform: scale(0.88);
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.actionButton.jump {
+    top: 0;
+    right: 68px;
+}
+
+.actionButton.dodge {
+    top: 55px;
+    left: 8px;
+}
+
+.actionButton.attack {
+    right: 0;
+    bottom: 30px;
+
+    width: 68px;
+    height: 68px;
+
+    font-size: 26px;
+}
+
+.actionButton.capture {
+    left: 45px;
+    bottom: 0;
+}
+
+.actionButton.petCommand {
+    right: 68px;
+    bottom: 0;
+}
+
+.actionButton.interact {
+    right: 2px;
+    top: 8px;
+}
+
+/* =========================================
+   PET QUICK SLOTS
+========================================= */
+
+#petQuickSlots {
+    position: absolute;
+
+    left: 50%;
+    bottom: 15px;
+
+    transform: translateX(-50%);
+
+    display: flex;
+    gap: 5px;
+}
+
+.petSlot {
+    position: relative;
+
+    width: 42px;
+    height: 42px;
+
+    pointer-events: auto;
+
+    border-radius: 9px;
+
+    border: 1px solid rgba(255, 255, 255, 0.13);
+
+    background: rgba(0, 0, 0, 0.48);
+
+    font-size: 17px;
+}
+
+.petSlot.active {
+    border-color: rgba(255, 255, 255, 0.55);
+}
+
+.petSlot span {
+    position: absolute;
+
+    left: 4px;
+    top: 3px;
+
+    font-size: 7px;
+    color: #aaa;
+}
+
+/* =========================================
+   BOTTOM HINT
+========================================= */
+
+#bottomHint {
+    position: absolute;
+
+    left: 50%;
+    bottom: 67px;
+
+    transform: translateX(-50%);
+
+    color: rgba(255, 255, 255, 0.55);
+
+    font-size: 10px;
+
+    white-space: nowrap;
+}
+
+/* =========================================
+   GAME PANELS
+========================================= */
+
+.gamePanel {
+    position: fixed;
+
+    z-index: 2000;
+
+    left: 50%;
+    top: 50%;
+
+    width: min(92vw, 600px);
+    height: min(78vh, 520px);
+
+    transform: translate(-50%, -50%);
+
+    overflow: hidden;
+
+    border-radius: 17px;
+
+    border: 1px solid rgba(255, 255, 255, 0.12);
+
+    background: rgba(7, 10, 9, 0.96);
+
+    box-shadow:
+        0 20px 70px rgba(0, 0, 0, 0.65);
+}
+
+.largePanel {
+    width: min(94vw, 850px);
+    height: min(82vh, 620px);
+}
+
+.panelHeader {
+    height: 60px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 18px;
+
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.panelHeader h2 {
+    font-size: 17px;
+    letter-spacing: 1px;
+}
+
+.closePanel {
+    width: 36px;
+    height: 36px;
+
+    border: 0;
+    border-radius: 10px;
+
+    background: rgba(255, 255, 255, 0.08);
+
+    font-size: 22px;
+}
+
+.panelBody {
+    height: calc(100% - 60px);
+    overflow: auto;
+
+    padding: 15px;
+}
+
+/* =========================================
+   INVENTORY
+========================================= */
+
+.inventoryGrid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(6, minmax(0, 1fr));
+
+    gap: 8px;
+}
+
+.inventorySlot {
+    aspect-ratio: 1;
+
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 10px;
+
+    border: 1px solid rgba(255, 255, 255, 0.09);
+
+    background: rgba(255, 255, 255, 0.045);
+
+    font-size: 22px;
+}
+
+.inventorySlot .itemAmount {
+    position: absolute;
+
+    right: 5px;
+    bottom: 4px;
+
+    color: #ccc;
+
+    font-size: 9px;
+}
+
+/* =========================================
+   PET LIST
+========================================= */
+
+.petList {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fill, minmax(180px, 1fr));
+
+    gap: 10px;
+}
+
+.petCard {
+    padding: 12px;
+
+    border-radius: 12px;
+
+    border: 1px solid rgba(255, 255, 255, 0.09);
+
+    background: rgba(255, 255, 255, 0.045);
+}
+
+.petCardName {
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.petCardInfo {
+    margin-top: 6px;
+
+    color: #8e9993;
+
+    font-size: 9px;
+}
+
+/* =========================================
+   MAP
+========================================= */
+
+.mapContainer {
+    position: relative;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+
+    border-radius: 12px;
+
+    background:
+        radial-gradient(
+            circle,
+            #405d43,
+            #17251b
+        );
+}
+
+.mapGrid {
+    position: absolute;
+    inset: 0;
+
+    background-image:
+        linear-gradient(
+            rgba(255, 255, 255, 0.06) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.06) 1px,
+            transparent 1px
+        );
+
+    background-size: 40px 40px;
+}
+
+.mapPlayerMarker {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+
+    width: 14px;
+    height: 14px;
+
+    display: grid;
+    place-items: center;
+
+    transform: translate(-50%, -50%);
+
+    color: white;
+
+    text-shadow:
+        0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+/* =========================================
+   SETTINGS
+========================================= */
+
+.settingsList {
+    padding: 15px;
+}
+
+.settingRow {
+    min-height: 55px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+
+    font-size: 12px;
+}
+
+.settingRow select {
+    padding: 7px 10px;
+
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+
+    background: #151b17;
+    color: white;
+}
+
+.settingRow input {
+    width: 18px;
+    height: 18px;
+}
+
+/* =========================================
+   CHARACTER
+========================================= */
+
+.characterStats {
+    display: grid;
+    gap: 8px;
+
+    padding: 15px;
+}
+
+.characterStats > div {
+    display: flex;
+    justify-content: space-between;
+
+    padding: 12px;
+
+    border-radius: 10px;
+
+    background: rgba(255, 255, 255, 0.045);
+}
+
+.characterStats span {
+    color: #9ca69f;
+    font-size: 11px;
+}
+
+.characterStats strong {
+    font-size: 12px;
+}
+
+/* =========================================
+   CONFIRM DIALOG
+========================================= */
+
+.dialogOverlay {
+    position: fixed;
+    inset: 0;
+
+    z-index: 5000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(0, 0, 0, 0.65);
+}
+
+.dialogBox {
+    width: min(90vw, 380px);
+
+    padding: 22px;
+
+    border-radius: 15px;
+
+    background: #101512;
+
+    border: 1px solid rgba(255, 255, 255, 0.12);
+
+    text-align: center;
+}
+
+.dialogBox h2 {
+    font-size: 18px;
+}
+
+.dialogBox p {
+    margin-top: 9px;
+
+    color: #9da8a1;
+
+    font-size: 12px;
+}
+
+.dialogButtons {
+    display: flex;
+    gap: 8px;
+
+    margin-top: 20px;
+}
+
+.dialogButton {
+    flex: 1;
+
+    min-height: 42px;
+
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    border-radius: 9px;
+
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.dialogButton.primary {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* =========================================
+   ERROR SCREEN
+========================================= */
+
+#errorScreen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #080b09;
+}
+
+.errorBox {
+    width: min(90vw, 450px);
+
+    padding: 30px;
+
+    border-radius: 15px;
+
+    background: #111613;
+
+    text-align: center;
+}
+
+.errorBox h1 {
+    font-size: 25px;
+}
+
+.errorBox p {
+    margin-top: 10px;
+
+    color: #929c96;
+
+    font-size: 12px;
+}
+
+/* =========================================
+   DESKTOP
+========================================= */
+
+@media (min-width: 800px) {
+
+    #mobileJoystick,
+    #mobileActions {
+        display: none;
+    }
+
+}
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 799px) {
+
+    #bottomHint {
+        display: none;
+    }
+
+    #petHUD {
+        bottom: 165px;
+        width: 145px;
+    }
+
+    #playerHUD {
+        width: min(250px, 62vw);
+    }
+
+    .inventoryGrid {
+        grid-template-columns:
+            repeat(5, minmax(0, 1fr));
+    }
+
+}
+
+/* =========================================
+   SMALL PHONES
+========================================= */
+
+@media (max-width: 420px) {
+
+    #playerHUD {
+        width: 205px;
+    }
+
+    .statText {
+        width: 42px;
+    }
+
+    #worldInfo {
+        top: 63px;
+        right: 8px;
+    }
+
+    #topButtons {
+        right: 8px;
+        gap: 5px;
+    }
+
+    .hudButton {
+        width: 38px;
+        height: 38px;
+    }
+
+    #petHUD {
+        left: 8px;
+        bottom: 155px;
+    }
+
+    #mobileJoystick {
+        left: 5px;
+        bottom: 12px;
+    }
+
+    #mobileActions {
+        right: 5px;
+        bottom: 10px;
+    }
+
+    .petSlot {
+        width: 38px;
+        height: 38px;
+    }
+
+}
+
+/* =========================================
+   LANDSCAPE MOBILE
+========================================= */
+
+@media (
+    orientation: landscape
+) and (max-height: 600px) {
+
+    #playerHUD {
+        width: 220px;
+    }
+
+    #mobileJoystick {
+        transform: scale(0.8);
+        transform-origin: bottom left;
+    }
+
+    #mobileActions {
+        transform: scale(0.8);
+        transform-origin: bottom right;
+    }
+
+    #petHUD {
+        bottom: 110px;
+    }
+
+    #petQuickSlots {
+        bottom: 8px;
+    }
+
+}
+
+/* =========================================
+   REDUCED MOTION
+========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+
+}
