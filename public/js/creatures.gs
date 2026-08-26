@@ -1,81 +1,76 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 
-export class CreatureManager {
+export class Creatures {
 
     constructor(game) {
 
         this.game = game;
 
-        this.creatures = [];
+        this.list = [];
 
         this.nextId = 1;
 
         this.spawnTimer = 0;
 
-        this.maxCreatures = 35;
+        this.maxCreatures = 30;
 
-        this.spawnDistance = 70;
+        this.spawnDistance = 120;
 
-        this.types = [
-
-            {
-                name: "Lunacat",
-                color: 0x8c7cff,
-                health: 70,
-                damage: 8,
-                speed: 2.8,
-                size: 1.0,
-                rarity: "Common"
-            },
+        this.species = [
 
             {
-                name: "Flameling",
-                color: 0xe86b35,
+                id: "leafy",
+                name: "Leafy",
+                rarity: "Common",
                 health: 60,
-                damage: 10,
-                speed: 3.2,
-                size: 0.85,
-                rarity: "Common"
+                damage: 8,
+                speed: 1.8,
+                color: 0x6fa85a,
+                size: 0.8
             },
 
             {
-                name: "Leafhorn",
-                color: 0x4fa85b,
-                health: 110,
-                damage: 14,
-                speed: 2.1,
-                size: 1.25,
-                rarity: "Uncommon"
+                id: "flameling",
+                name: "Flameling",
+                rarity: "Uncommon",
+                health: 75,
+                damage: 12,
+                speed: 2.2,
+                color: 0xd96a3a,
+                size: 0.9
             },
 
             {
-                name: "Aquafin",
-                color: 0x3b9fd6,
-                health: 85,
-                damage: 9,
-                speed: 3.0,
-                size: 0.95,
-                rarity: "Uncommon"
+                id: "aquabun",
+                name: "Aquabun",
+                rarity: "Common",
+                health: 55,
+                damage: 7,
+                speed: 2.5,
+                color: 0x5d9ed1,
+                size: 0.75
             },
 
             {
-                name: "Stoneback",
-                color: 0x77736c,
-                health: 180,
-                damage: 18,
-                speed: 1.3,
-                size: 1.5,
-                rarity: "Rare"
-            },
-
-            {
-                name: "Nightfang",
-                color: 0x302b46,
+                id: "rockhorn",
+                name: "Rockhorn",
+                rarity: "Rare",
                 health: 130,
-                damage: 20,
-                speed: 3.8,
-                size: 1.1,
-                rarity: "Rare"
+                damage: 18,
+                speed: 1.2,
+                color: 0x77736a,
+                size: 1.25
+            },
+
+            {
+                id: "shadowfang",
+                name: "Shadowfang",
+                rarity: "Epic",
+                health: 180,
+                damage: 25,
+                speed: 3.1,
+                color: 0x3b3151,
+                size: 1.05
             }
 
         ];
@@ -106,9 +101,59 @@ export class CreatureManager {
             i++
         ) {
 
-            this.spawnCreature();
+            this.spawnRandomCreature();
 
         }
+
+    }
+
+
+    // =================================================
+    // UPDATE
+    // =================================================
+
+    update(delta) {
+
+        this.spawnTimer += delta;
+
+        if (
+            this.spawnTimer >= 5
+        ) {
+
+            this.spawnTimer = 0;
+
+            if (
+                this.list.length <
+                this.maxCreatures
+            ) {
+
+                this.spawnRandomCreature();
+
+            }
+
+        }
+
+
+        for (
+            const creature of this.list
+        ) {
+
+            if (
+                creature.dead
+            ) {
+
+                continue;
+
+            }
+
+            this.updateCreature(
+                creature,
+                delta
+            );
+
+        }
+
+        this.removeDeadCreatures();
 
     }
 
@@ -117,171 +162,33 @@ export class CreatureManager {
     // SPAWN
     // =================================================
 
-    spawnCreature() {
+    spawnRandomCreature() {
 
         if (
-            this.creatures.length >=
-            this.maxCreatures
+            !this.game.world
         ) {
 
             return null;
 
         }
 
-
-        const type =
-            this.getRandomType();
-
-
-        const player =
-            this.game.player;
+        const species =
+            this.getRandomSpecies();
 
 
-        let x;
-        let z;
+        const position =
+            this.game.world
+                .getRandomLandPosition();
 
 
-        if (
-            player &&
-            player.object
-        ) {
-
-            const angle =
-                Math.random() *
-                Math.PI *
-                2;
-
-
-            const distance =
-                15 +
-                Math.random() *
-                55;
-
-
-            x =
-                player.object.position.x +
-                Math.cos(angle) *
-                distance;
-
-
-            z =
-                player.object.position.z +
-                Math.sin(angle) *
-                distance;
-
-        } else {
-
-            x =
-                (Math.random() - 0.5) *
-                120;
-
-            z =
-                (Math.random() - 0.5) *
-                120;
-
-        }
-
-
-        const y =
-            this.getGroundHeight(
-                x,
-                z
+        const creature =
+            this.createCreature(
+                species,
+                position
             );
 
 
-        const creature = {
-
-            id:
-                this.nextId++,
-
-            type:
-                type.name,
-
-            name:
-                type.name,
-
-            color:
-                type.color,
-
-            rarity:
-                type.rarity,
-
-            maxHealth:
-                type.health,
-
-            health:
-                type.health,
-
-            damage:
-                type.damage,
-
-            speed:
-                type.speed,
-
-            size:
-                type.size,
-
-            level:
-                1 +
-                Math.floor(
-                    Math.random() * 5
-                ),
-
-            position:
-                new THREE.Vector3(
-                    x,
-                    y,
-                    z
-                ),
-
-            velocity:
-                new THREE.Vector3(),
-
-            direction:
-                new THREE.Vector3(),
-
-            target:
-                null,
-
-            state:
-                "wander",
-
-            stateTimer:
-                1 +
-                Math.random() * 4,
-
-            attackCooldown:
-                0,
-
-            fleeTimer:
-                0,
-
-            object:
-                null,
-
-            alive:
-                true
-
-        };
-
-
-        creature.object =
-            this.createCreatureModel(
-                creature
-            );
-
-
-        creature.object.position.copy(
-            creature.position
-        );
-
-
-        this.game.scene.add(
-            creature.object
-        );
-
-
-        this.creatures.push(
+        this.list.push(
             creature
         );
 
@@ -292,38 +199,97 @@ export class CreatureManager {
 
 
     // =================================================
-    // CREATE CREATURE MODEL
+    // RANDOM SPECIES
     // =================================================
 
-    createCreatureModel(
-        creature
+    getRandomSpecies() {
+
+        const random =
+            Math.random();
+
+
+        if (
+            random < 0.48
+        ) {
+
+            return this.species[0];
+
+        }
+
+        if (
+            random < 0.70
+        ) {
+
+            return this.species[2];
+
+        }
+
+        if (
+            random < 0.86
+        ) {
+
+            return this.species[1];
+
+        }
+
+        if (
+            random < 0.96
+        ) {
+
+            return this.species[3];
+
+        }
+
+        return this.species[4];
+
+    }
+
+
+    // =================================================
+    // CREATE CREATURE
+    // =================================================
+
+    createCreature(
+        species,
+        position
     ) {
 
         const group =
             new THREE.Group();
 
 
-        const material =
+        group.name =
+            species.name;
+
+
+        const bodyMaterial =
             new THREE.MeshStandardMaterial({
 
                 color:
-                    creature.color,
+                    species.color,
 
-                roughness:
-                    0.8,
-
-                metalness:
-                    0.02
+                roughness: 0.8
 
             });
 
 
+        const eyeMaterial =
+            new THREE.MeshStandardMaterial({
+
+                color: 0x111111,
+
+                roughness: 0.3
+
+            });
+
+
+        // =============================================
         // BODY
+        // =============================================
 
         const bodyGeometry =
             new THREE.SphereGeometry(
-                0.65 *
-                creature.size,
+                0.65,
                 12,
                 8
             );
@@ -332,27 +298,22 @@ export class CreatureManager {
         const body =
             new THREE.Mesh(
                 bodyGeometry,
-                material
+                bodyMaterial
             );
 
 
         body.scale.set(
-            1.15,
+            1,
             0.85,
-            1.35
+            1.15
         );
 
 
         body.position.y =
-            0.75 *
-            creature.size;
+            0.7;
 
 
         body.castShadow =
-            true;
-
-
-        body.receiveShadow =
             true;
 
 
@@ -361,12 +322,13 @@ export class CreatureManager {
         );
 
 
+        // =============================================
         // HEAD
+        // =============================================
 
         const headGeometry =
             new THREE.SphereGeometry(
-                0.42 *
-                creature.size,
+                0.48,
                 12,
                 8
             );
@@ -375,16 +337,14 @@ export class CreatureManager {
         const head =
             new THREE.Mesh(
                 headGeometry,
-                material
+                bodyMaterial
             );
 
 
         head.position.set(
             0,
-            1.05 *
-                creature.size,
-            -0.55 *
-                creature.size
+            1.05,
+            -0.52
         );
 
 
@@ -397,65 +357,13 @@ export class CreatureManager {
         );
 
 
-        // EARS
-
-        const earGeometry =
-            new THREE.ConeGeometry(
-                0.18 *
-                    creature.size,
-                0.45 *
-                    creature.size,
-                6
-            );
-
-
-        const leftEar =
-            new THREE.Mesh(
-                earGeometry,
-                material
-            );
-
-
-        leftEar.position.set(
-            -0.25 *
-                creature.size,
-            1.4 *
-                creature.size,
-            -0.55 *
-                creature.size
-        );
-
-
-        const rightEar =
-            leftEar.clone();
-
-
-        rightEar.position.x =
-            0.25 *
-            creature.size;
-
-
-        group.add(
-            leftEar
-        );
-
-        group.add(
-            rightEar
-        );
-
-
+        // =============================================
         // EYES
-
-        const eyeMaterial =
-            new THREE.MeshBasicMaterial({
-                color: 0x111111
-            });
-
+        // =============================================
 
         const eyeGeometry =
             new THREE.SphereGeometry(
-                0.055 *
-                    creature.size,
+                0.065,
                 8,
                 8
             );
@@ -469,12 +377,9 @@ export class CreatureManager {
 
 
         leftEye.position.set(
-            -0.15 *
-                creature.size,
-            1.12 *
-                creature.size,
-            -0.91 *
-                creature.size
+            -0.16,
+            1.12,
+            -0.91
         );
 
 
@@ -483,8 +388,7 @@ export class CreatureManager {
 
 
         rightEye.position.x =
-            0.15 *
-            creature.size;
+            0.16;
 
 
         group.add(
@@ -496,110 +400,150 @@ export class CreatureManager {
         );
 
 
-        // TAIL
+        // =============================================
+        // EARS
+        // =============================================
 
-        const tailGeometry =
-            new THREE.CapsuleGeometry(
-                0.12 *
-                    creature.size,
-                0.55 *
-                    creature.size,
-                4,
+        const earGeometry =
+            new THREE.ConeGeometry(
+                0.18,
+                0.45,
                 6
             );
 
 
-        const tail =
+        const leftEar =
             new THREE.Mesh(
-                tailGeometry,
-                material
+                earGeometry,
+                bodyMaterial
             );
 
 
-        tail.position.set(
-            0,
-            0.75 *
-                creature.size,
-            0.85 *
-                creature.size
+        leftEar.position.set(
+            -0.27,
+            1.48,
+            -0.5
         );
 
 
-        tail.rotation.x =
-            -0.7;
+        const rightEar =
+            leftEar.clone();
 
 
-        tail.castShadow =
-            true;
+        rightEar.position.x =
+            0.27;
 
 
         group.add(
-            tail
+            leftEar
+        );
+
+        group.add(
+            rightEar
+        );
+
+
+        // =============================================
+        // SCALE
+        // =============================================
+
+        group.scale.setScalar(
+            species.size
+        );
+
+
+        // =============================================
+        // POSITION
+        // =============================================
+
+        group.position.copy(
+            position
+        );
+
+
+        // =============================================
+        // DATA
+        // =============================================
+
+        const level =
+            1 +
+            Math.floor(
+                Math.random() * 10
+            );
+
+
+        const maxHealth =
+            species.health +
+            level * 6;
+
+
+        group.userData =
+            {
+
+                id:
+                    this.nextId++,
+
+                speciesId:
+                    species.id,
+
+                name:
+                    species.name,
+
+                rarity:
+                    species.rarity,
+
+                level:
+                    level,
+
+                health:
+                    maxHealth,
+
+                maxHealth:
+                    maxHealth,
+
+                damage:
+                    species.damage +
+                    level,
+
+                speed:
+                    species.speed,
+
+                wild:
+                    true,
+
+                captured:
+                    false,
+
+                dead:
+                    false,
+
+                target:
+                    null,
+
+                direction:
+                    new THREE.Vector3(),
+
+                wanderTimer:
+                    0,
+
+                attackTimer:
+                    0,
+
+                detectionRange:
+                    12,
+
+                attackRange:
+                    2.1
+
+            };
+
+
+        this.game.scene.add(
+            group
         );
 
 
         return group;
-
-    }
-
-
-    // =================================================
-    // UPDATE
-    // =================================================
-
-    update(
-        delta
-    ) {
-
-        this.spawnTimer +=
-            delta;
-
-
-        if (
-            this.spawnTimer >= 5
-        ) {
-
-            this.spawnTimer = 0;
-
-            this.spawnCreature();
-
-        }
-
-
-        for (
-            let i =
-                this.creatures.length -
-                1;
-
-            i >= 0;
-
-            i--
-        ) {
-
-            const creature =
-                this.creatures[i];
-
-
-            if (
-                !creature.alive
-            ) {
-
-                this.removeCreature(
-                    creature,
-                    i
-                );
-
-                continue;
-
-            }
-
-
-            this.updateCreature(
-                creature,
-                delta
-            );
-
-        }
 
     }
 
@@ -613,20 +557,15 @@ export class CreatureManager {
         delta
     ) {
 
-        if (
-            !creature.object
-        ) {
-
-            return;
-
-        }
+        const data =
+            creature.userData;
 
 
-        creature.stateTimer -=
+        data.wanderTimer -=
             delta;
 
 
-        creature.attackCooldown -=
+        data.attackTimer -=
             delta;
 
 
@@ -644,372 +583,178 @@ export class CreatureManager {
         }
 
 
-        const distance =
-            creature.position.distanceTo(
-                player.object.position
-            );
-
-
-        // ---------------------------------------------
-        // PLAYER TOO CLOSE
-        // ---------------------------------------------
-
-        if (
-            distance < 4
-        ) {
-
-            if (
-                creature.rarity ===
-                "Rare"
-            ) {
-
-                creature.state =
-                    "attack";
-
-            } else {
-
-                creature.state =
-                    "flee";
-
-                creature.fleeTimer =
-                    2;
-
-            }
-
-        }
-
-
-        // ---------------------------------------------
-        // FLEE
-        // ---------------------------------------------
-
-        if (
-            creature.state ===
-            "flee"
-        ) {
-
-            this.fleeFromPlayer(
-                creature,
-                delta
-            );
-
-        }
-
-
-        // ---------------------------------------------
-        // ATTACK
-        // ---------------------------------------------
-
-        else if (
-            creature.state ===
-            "attack"
-        ) {
-
-            this.attackPlayer(
-                creature,
-                delta
-            );
-
-        }
-
-
-        // ---------------------------------------------
-        // WANDER
-        // ---------------------------------------------
-
-        else {
-
-            this.wander(
-                creature,
-                delta
-            );
-
-        }
-
-
-        this.keepCreatureOnGround(
-            creature
-        );
-
-
-        creature.object.position.copy(
-            creature.position
-        );
-
-
-        // Rotate toward movement
-
-        if (
-            creature.velocity.lengthSq()
-            >
-            0.01
-        ) {
-
-            const angle =
-                Math.atan2(
-                    creature.velocity.x,
-                    creature.velocity.z
-                );
-
-
-            creature.object.rotation.y =
-                this.smoothRotation(
-                    creature.object.rotation.y,
-                    angle,
-                    delta * 5
-                );
-
-        }
-
-
-        // Small idle animation
-
-        creature.object.position.y +=
-            Math.sin(
-                this.game.elapsed * 4 +
-                creature.id
-            ) *
-            0.025;
-
-    }
-
-
-    // =================================================
-    // WANDER
-    // =================================================
-
-    wander(
-        creature,
-        delta
-    ) {
-
-        if (
-            creature.stateTimer <= 0
-        ) {
-
-            creature.stateTimer =
-                2 +
-                Math.random() * 5;
-
-
-            const angle =
-                Math.random() *
-                Math.PI *
-                2;
-
-
-            creature.direction.set(
-                Math.sin(angle),
-                0,
-                Math.cos(angle)
-            );
-
-
-            creature.direction.multiplyScalar(
-                0.5 +
-                Math.random() *
-                0.5
-            );
-
-        }
-
-
-        creature.velocity.lerp(
-            creature.direction
-                .clone()
-                .multiplyScalar(
-                    creature.speed *
-                    0.45
-                ),
-            delta * 2
-        );
-
-
-        creature.position.add(
-            creature.velocity
-                .clone()
-                .multiplyScalar(
-                    delta
-                )
-        );
-
-    }
-
-
-    // =================================================
-    // FLEE
-    // =================================================
-
-    fleeFromPlayer(
-        creature,
-        delta
-    ) {
-
-        const player =
-            this.game.player;
-
-
-        const direction =
-            creature.position
-                .clone()
-                .sub(
-                    player.object.position
-                );
-
-
-        direction.y = 0;
-
-
-        if (
-            direction.lengthSq() >
-            0
-        ) {
-
-            direction.normalize();
-
-        }
-
-
-        creature.velocity.lerp(
-            direction.multiplyScalar(
-                creature.speed *
-                1.5
-            ),
-            delta * 5
-        );
-
-
-        creature.position.add(
-            creature.velocity
-                .clone()
-                .multiplyScalar(
-                    delta
-                )
-        );
-
-
-        creature.fleeTimer -=
-            delta;
-
-
-        if (
-            creature.fleeTimer <= 0
-        ) {
-
-            creature.state =
-                "wander";
-
-            creature.stateTimer =
-                2;
-
-        }
-
-    }
-
-
-    // =================================================
-    // ATTACK PLAYER
-    // =================================================
-
-    attackPlayer(
-        creature,
-        delta
-    ) {
-
-        const player =
-            this.game.player;
-
-
-        const direction =
-            player.object.position
-                .clone()
-                .sub(
-                    creature.position
-                );
-
-
-        direction.y = 0;
+        const playerPosition =
+            player.object.position;
 
 
         const distance =
-            direction.length();
+            creature.position.distanceTo(
+                playerPosition
+            );
 
+
+        // =============================================
+        // PLAYER DETECTION
+        // =============================================
 
         if (
-            distance > 2.2
+            distance <
+            data.detectionRange
         ) {
 
-            direction.normalize();
-
-
-            creature.velocity.lerp(
-                direction.multiplyScalar(
-                    creature.speed
-                ),
-                delta * 3
-            );
-
-
-            creature.position.add(
-                creature.velocity
-                    .clone()
-                    .multiplyScalar(
-                        delta
-                    )
-            );
+            data.target =
+                playerPosition;
 
         } else {
 
-            creature.velocity.set(
-                0,
-                0,
-                0
+            data.target =
+                null;
+
+        }
+
+
+        // =============================================
+        // ATTACK
+        // =============================================
+
+        if (
+            distance <=
+            data.attackRange
+        ) {
+
+            creature.lookAt(
+                playerPosition.x,
+                creature.position.y,
+                playerPosition.z
             );
 
 
             if (
-                creature.attackCooldown <=
+                data.attackTimer <=
                 0
             ) {
 
-                creature.attackCooldown =
-                    2;
-
-
-                player.damage(
-                    creature.damage
-                );
+                data.attackTimer =
+                    1.5;
 
 
                 if (
-                    this.game.ui
+                    typeof player.damage ===
+                    "function"
                 ) {
 
-                    this.game.ui.notify(
-                        `${creature.name} attacked you!`
+                    player.damage(
+                        data.damage
                     );
 
                 }
 
             }
 
+
+            return;
+
         }
+
+
+        // =============================================
+        // CHASE
+        // =============================================
+
+        if (
+            data.target
+        ) {
+
+            const direction =
+                new THREE.Vector3()
+                    .subVectors(
+                        playerPosition,
+                        creature.position
+                    );
+
+
+            direction.y =
+                0;
+
+
+            if (
+                direction.lengthSq() >
+                0.001
+            ) {
+
+                direction.normalize();
+
+                this.moveCreature(
+                    creature,
+                    direction,
+                    data.speed,
+                    delta
+                );
+
+            }
+
+
+            return;
+
+        }
+
+
+        // =============================================
+        // WANDER
+        // =============================================
+
+        if (
+            data.wanderTimer <=
+            0
+        ) {
+
+            data.wanderTimer =
+                2 +
+                Math.random() * 4;
+
+
+            data.direction.set(
+                Math.random() - 0.5,
+                0,
+                Math.random() - 0.5
+            );
+
+
+            if (
+                data.direction.lengthSq() >
+                0
+            ) {
+
+                data.direction.normalize();
+
+            }
+
+        }
+
+
+        this.moveCreature(
+            creature,
+            data.direction,
+            data.speed * 0.45,
+            delta
+        );
 
     }
 
 
     // =================================================
-    // DAMAGE
+    // MOVE CREATURE
     // =================================================
 
-    damageCreature(
+    moveCreature(
         creature,
-        amount
+        direction,
+        speed,
+        delta
     ) {
 
         if (
-            !creature ||
-            !creature.alive
+            !direction
         ) {
 
             return;
@@ -1017,326 +762,56 @@ export class CreatureManager {
         }
 
 
-        creature.health -=
-            Math.max(
-                0,
-                amount
-            );
+        creature.position.x +=
+            direction.x *
+            speed *
+            delta;
 
 
-        // Damaged creature runs away.
-
-        creature.state =
-            "flee";
-
-
-        creature.fleeTimer =
-            2;
+        creature.position.z +=
+            direction.z *
+            speed *
+            delta;
 
 
         if (
-            creature.health <= 0
+            direction.lengthSq() >
+            0.001
         ) {
 
-            creature.health =
-                0;
-
-            this.defeatCreature(
-                creature
-            );
-
-        }
-
-    }
+            const targetRotation =
+                Math.atan2(
+                    direction.x,
+                    direction.z
+                );
 
 
-    // =================================================
-    // DEFEAT
-    // =================================================
-
-    defeatCreature(
-        creature
-    ) {
-
-        creature.alive =
-            false;
-
-
-        if (
-            this.game.systems
-        ) {
-
-            this.game.systems
-                .addXP(
-                    20 +
-                    creature.level * 5
+            creature.rotation.y =
+                this.smoothRotation(
+                    creature.rotation.y,
+                    targetRotation,
+                    delta * 5
                 );
 
         }
 
 
         if (
-            this.game.ui
+            this.game.world
         ) {
 
-            this.game.ui.notify(
-                `${creature.name} defeated!`
-            );
+            const terrainY =
+                this.game.world
+                    .getTerrainHeight(
+                        creature.position.x,
+                        creature.position.z
+                    );
+
+
+            creature.position.y =
+                terrainY;
 
         }
-
-    }
-
-
-    // =================================================
-    // NEAREST CREATURE
-    // =================================================
-
-    getNearestCreature(
-        maxDistance = 5
-    ) {
-
-        const player =
-            this.game.player;
-
-
-        if (
-            !player ||
-            !player.object
-        ) {
-
-            return null;
-
-        }
-
-
-        let nearest =
-            null;
-
-
-        let nearestDistance =
-            maxDistance;
-
-
-        for (
-            const creature
-            of this.creatures
-        ) {
-
-            if (
-                !creature.alive
-            ) {
-
-                continue;
-
-            }
-
-
-            const distance =
-                creature.position.distanceTo(
-                    player.object.position
-                );
-
-
-            if (
-                distance <
-                nearestDistance
-            ) {
-
-                nearestDistance =
-                    distance;
-
-                nearest =
-                    creature;
-
-            }
-
-        }
-
-
-        return nearest;
-
-    }
-
-
-    // =================================================
-    // REMOVE
-    // =================================================
-
-    removeCreature(
-        creature,
-        index
-    ) {
-
-        if (
-            creature.object
-        ) {
-
-            this.game.scene.remove(
-                creature.object
-            );
-
-
-            creature.object.traverse(
-                child => {
-
-                    if (
-                        child.geometry
-                    ) {
-
-                        child.geometry.dispose();
-
-                    }
-
-
-                    if (
-                        child.material
-                    ) {
-
-                        if (
-                            Array.isArray(
-                                child.material
-                            )
-                        ) {
-
-                            child.material.forEach(
-                                material =>
-                                    material.dispose()
-                            );
-
-                        } else {
-
-                            child.material.dispose();
-
-                        }
-
-                    }
-
-                }
-            );
-
-        }
-
-
-        this.creatures.splice(
-            index,
-            1
-        );
-
-    }
-
-
-    // =================================================
-    // GROUND
-    // =================================================
-
-    getGroundHeight(
-        x,
-        z
-    ) {
-
-        if (
-            this.game.world &&
-            this.game.world.getTerrainHeight
-        ) {
-
-            return this.game.world
-                .getTerrainHeight(
-                    x,
-                    z
-                );
-
-        }
-
-
-        return 0;
-
-    }
-
-
-    keepCreatureOnGround(
-        creature
-    ) {
-
-        creature.position.y =
-            this.getGroundHeight(
-                creature.position.x,
-                creature.position.z
-            );
-
-    }
-
-
-    // =================================================
-    // RANDOM TYPE
-    // =================================================
-
-    getRandomType() {
-
-        const random =
-            Math.random();
-
-
-        // Rare creatures have lower chance.
-
-        if (
-            random < 0.08
-        ) {
-
-            const rare =
-                this.types.filter(
-                    type =>
-                        type.rarity ===
-                        "Rare"
-                );
-
-
-            return rare[
-                Math.floor(
-                    Math.random() *
-                    rare.length
-                )
-            ];
-
-        }
-
-
-        if (
-            random < 0.30
-        ) {
-
-            const uncommon =
-                this.types.filter(
-                    type =>
-                        type.rarity ===
-                        "Uncommon"
-                );
-
-
-            return uncommon[
-                Math.floor(
-                    Math.random() *
-                    uncommon.length
-                )
-            ];
-
-        }
-
-
-        const common =
-            this.types.filter(
-                type =>
-                    type.rarity ===
-                    "Common"
-            );
-
-
-        return common[
-            Math.floor(
-                Math.random() *
-                common.length
-            )
-        ];
 
     }
 
@@ -1382,10 +857,489 @@ export class CreatureManager {
             current +
             difference *
             Math.min(
-                amount,
-                1
+                1,
+                amount
             )
         );
+
+    }
+
+
+    // =================================================
+    // NEAREST CREATURE
+    // =================================================
+
+    getNearestCreature(
+        maxDistance = 10
+    ) {
+
+        if (
+            !this.game.player ||
+            !this.game.player.object
+        ) {
+
+            return null;
+
+        }
+
+
+        const playerPosition =
+            this.game.player.object.position;
+
+
+        let nearest =
+            null;
+
+
+        let nearestDistance =
+            maxDistance;
+
+
+        for (
+            const creature of this.list
+        ) {
+
+            if (
+                creature.userData.dead
+            ) {
+
+                continue;
+
+            }
+
+
+            const distance =
+                creature.position.distanceTo(
+                    playerPosition
+                );
+
+
+            if (
+                distance <
+                nearestDistance
+            ) {
+
+                nearest =
+                    creature;
+
+                nearestDistance =
+                    distance;
+
+            }
+
+        }
+
+
+        return nearest;
+
+    }
+
+
+    // =================================================
+    // DAMAGE CREATURE
+    // =================================================
+
+    damageCreature(
+        creature,
+        amount
+    ) {
+
+        if (
+            !creature ||
+            !creature.userData
+        ) {
+
+            return false;
+
+        }
+
+
+        const data =
+            creature.userData;
+
+
+        if (
+            data.dead
+        ) {
+
+            return false;
+
+        }
+
+
+        amount =
+            Math.max(
+                0,
+                Number(amount) || 0
+            );
+
+
+        data.health -=
+            amount;
+
+
+        if (
+            this.game.ui
+        ) {
+
+            this.game.ui.notify(
+                `${data.name}: ${Math.max(
+                    0,
+                    Math.round(
+                        data.health
+                    )
+                )} HP`
+            );
+
+        }
+
+
+        if (
+            data.health <=
+            0
+        ) {
+
+            this.killCreature(
+                creature
+            );
+
+        }
+
+
+        return true;
+
+    }
+
+
+    // =================================================
+    // KILL
+    // =================================================
+
+    killCreature(
+        creature
+    ) {
+
+        const data =
+            creature.userData;
+
+
+        if (
+            data.dead
+        ) {
+
+            return;
+
+        }
+
+
+        data.dead =
+            true;
+
+
+        if (
+            this.game.systems &&
+            typeof this.game.systems.addXP ===
+            "function"
+        ) {
+
+            this.game.systems.addXP(
+                10 +
+                data.level * 3
+            );
+
+        }
+
+
+        if (
+            this.game.ui
+        ) {
+
+            this.game.ui.notify(
+                `${data.name} defeated!`
+            );
+
+        }
+
+
+        setTimeout(
+            () => {
+
+                if (
+                    creature.parent
+                ) {
+
+                    creature.parent.remove(
+                        creature
+                    );
+
+                }
+
+            },
+            500
+        );
+
+    }
+
+
+    // =================================================
+    // CAPTURE
+    // =================================================
+
+    captureNearestCreature() {
+
+        const creature =
+            this.getNearestCreature(
+                6
+            );
+
+
+        if (
+            !creature
+        ) {
+
+            if (
+                this.game.ui
+            ) {
+
+                this.game.ui.notify(
+                    "No creature nearby."
+                );
+
+            }
+
+            return false;
+
+        }
+
+
+        const data =
+            creature.userData;
+
+
+        if (
+            data.health <=
+            0 ||
+            data.dead
+        ) {
+
+            return false;
+
+        }
+
+
+        if (
+            !data.wild
+        ) {
+
+            return false;
+
+        }
+
+
+        // Capture chance becomes better
+        // when the creature has low HP.
+
+        const healthPercent =
+            data.health /
+            data.maxHealth;
+
+
+        let chance =
+            0.25 +
+            (
+                1 -
+                healthPercent
+            ) *
+            0.55;
+
+
+        if (
+            data.rarity ===
+            "Rare"
+        ) {
+
+            chance -=
+                0.08;
+
+        }
+
+
+        if (
+            data.rarity ===
+            "Epic"
+        ) {
+
+            chance -=
+                0.15;
+
+        }
+
+
+        const success =
+            Math.random() <
+            chance;
+
+
+        if (
+            success
+        ) {
+
+            this.captureCreature(
+                creature
+            );
+
+        } else {
+
+            if (
+                this.game.ui
+            ) {
+
+                this.game.ui.notify(
+                    `${data.name} escaped!`
+                );
+
+            }
+
+        }
+
+
+        return success;
+
+    }
+
+
+    // =================================================
+    // CAPTURE CREATURE
+    // =================================================
+
+    captureCreature(
+        creature
+    ) {
+
+        const data =
+            creature.userData;
+
+
+        data.wild =
+            false;
+
+
+        data.captured =
+            true;
+
+
+        if (
+            this.game.systems &&
+            typeof this.game.systems.addPet ===
+            "function"
+        ) {
+
+            this.game.systems.addPet({
+
+                id:
+                    data.id,
+
+                speciesId:
+                    data.speciesId,
+
+                name:
+                    data.name,
+
+                rarity:
+                    data.rarity,
+
+                level:
+                    data.level,
+
+                health:
+                    data.health,
+
+                maxHealth:
+                    data.maxHealth,
+
+                damage:
+                    data.damage,
+
+                speed:
+                    data.speed
+
+            });
+
+        }
+
+
+        if (
+            this.game.ui
+        ) {
+
+            this.game.ui.notify(
+                `🎉 ${data.name} captured!`
+            );
+
+        }
+
+
+        if (
+            creature.parent
+        ) {
+
+            creature.parent.remove(
+                creature
+            );
+
+        }
+
+
+        const index =
+            this.list.indexOf(
+                creature
+            );
+
+
+        if (
+            index !==
+            -1
+        ) {
+
+            this.list.splice(
+                index,
+                1
+            );
+
+        }
+
+    }
+
+
+    // =================================================
+    // REMOVE DEAD
+    // =================================================
+
+    removeDeadCreatures() {
+
+        for (
+            let i =
+                this.list.length - 1;
+            i >= 0;
+            i--
+        ) {
+
+            const creature =
+                this.list[i];
+
+
+            if (
+                creature.userData.dead
+            ) {
+
+                this.list.splice(
+                    i,
+                    1
+                );
+
+            }
+
+        }
 
     }
 
