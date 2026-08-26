@@ -7,956 +7,423 @@
 
     <meta
         name="viewport"
-        content="width=device-width,
-        initial-scale=1.0,
-        maximum-scale=1.0,
-        user-scalable=no,
-        viewport-fit=cover"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     >
 
     <meta
         name="theme-color"
-        content="#07100b"
-    >
-
-    <meta
-        name="description"
-        content="PET WORLD - Open World Creature Survival Adventure"
+        content="#111820"
     >
 
     <title>PET WORLD</title>
 
     <link
         rel="stylesheet"
-        href="css/style.css"
+        href="./css/style.css"
     >
 
 </head>
 
+
 <body>
 
-    <!-- =========================================
-         GAME CANVAS
-    ========================================== -->
-
-    <div id="gameContainer"></div>
-
-
-    <!-- =========================================
+    <!-- ==========================================
          LOADING SCREEN
-    ========================================== -->
+         ========================================== -->
 
-    <div id="loadingScreen">
+    <div id="loading-screen">
 
-        <div class="loadingContent">
+        <div class="loading-box">
 
-            <div class="gameLogo">
+            <div class="game-logo">
                 PET WORLD
             </div>
 
-            <div class="loadingSubtitle">
-                OPEN WORLD CREATURE ADVENTURE
+            <div class="loading-subtitle">
+                OPEN WORLD • PET CAPTURE • SURVIVAL
             </div>
 
-            <div class="loadingBar">
+            <div class="loading-bar">
 
                 <div
-                    id="loadingProgress"
-                    class="loadingProgress"
+                    id="loading-progress"
                 ></div>
 
             </div>
 
-            <div id="loadingText">
+            <div id="loading-text">
                 Loading world...
             </div>
 
-            <div
-                id="loadingPercent"
-                class="loadingPercent"
-            >
-                0%
-            </div>
-
         </div>
 
     </div>
 
 
-    <!-- =========================================
-         MAIN MENU
-    ========================================== -->
+    <!-- ==========================================
+         GAME
+         ========================================== -->
 
-    <div
-        id="mainMenu"
-        class="screen hidden"
-    >
+    <script type="module">
 
-        <div class="menuOverlay">
+        import { Game }
+        from "./js/game.js";
 
-            <div class="menuLogo">
-                PET WORLD
-            </div>
 
-            <div class="menuTagline">
-                EXPLORE • CAPTURE • SURVIVE
-            </div>
+        const loadingScreen =
+            document.getElementById(
+                "loading-screen"
+            );
 
-            <div class="menuButtons">
 
-                <button
-                    id="newGameButton"
-                    class="menuButton primary"
-                >
-                    NEW GAME
-                </button>
+        const loadingProgress =
+            document.getElementById(
+                "loading-progress"
+            );
 
-                <button
-                    id="continueButton"
-                    class="menuButton"
-                >
-                    CONTINUE
-                </button>
 
-                <button
-                    id="settingsButton"
-                    class="menuButton"
-                >
-                    SETTINGS
-                </button>
+        const loadingText =
+            document.getElementById(
+                "loading-text"
+            );
 
-            </div>
 
-        </div>
+        function setLoading(
+            progress,
+            text
+        ) {
 
-    </div>
+            loadingProgress.style.width =
+                `${progress}%`;
 
+            loadingText.textContent =
+                text;
 
-    <!-- =========================================
-         GAME UI
-    ========================================== -->
+        }
 
-    <div
-        id="gameUI"
-        class="hidden"
-    >
 
-        <!-- =====================================
-             TOP LEFT PLAYER HUD
-        ====================================== -->
+        async function startGame() {
 
-        <div id="playerHUD">
+            try {
 
-            <div class="playerIdentity">
+                setLoading(
+                    10,
+                    "Preparing engine..."
+                );
 
-                <div
-                    id="playerAvatar"
-                    class="playerAvatar"
-                >
-                    P
-                </div>
 
-                <div class="playerDetails">
+                await wait(300);
 
-                    <div
-                        id="playerName"
-                        class="playerName"
-                    >
-                        PLAYER
-                    </div>
 
-                    <div
-                        id="playerLevel"
-                        class="playerLevel"
-                    >
-                        LEVEL 1
-                    </div>
+                setLoading(
+                    25,
+                    "Creating world..."
+                );
 
-                </div>
 
-            </div>
+                await wait(300);
 
 
-            <!-- HEALTH -->
+                setLoading(
+                    45,
+                    "Loading player..."
+                );
 
-            <div class="statBar healthBar">
 
-                <span class="statIcon">
-                    ♥
-                </span>
+                await wait(300);
 
-                <div class="statTrack">
 
-                    <div
-                        id="healthFill"
-                        class="statFill"
-                        style="width:100%"
-                    ></div>
+                setLoading(
+                    65,
+                    "Finding wild pets..."
+                );
 
-                </div>
 
-                <span
-                    id="healthText"
-                    class="statText"
-                >
-                    100/100
-                </span>
+                await wait(300);
 
-            </div>
 
+                setLoading(
+                    80,
+                    "Preparing controls..."
+                );
 
-            <!-- STAMINA -->
 
-            <div class="statBar staminaBar">
+                await wait(300);
 
-                <span class="statIcon">
-                    ⚡
-                </span>
 
-                <div class="statTrack">
+                const game =
+                    new Game();
 
-                    <div
-                        id="staminaFill"
-                        class="statFill"
-                        style="width:100%"
-                    ></div>
 
-                </div>
+                window.petWorldGame =
+                    game;
 
-                <span
-                    id="staminaText"
-                    class="statText"
-                >
-                    100/100
-                </span>
 
-            </div>
+                setLoading(
+                    90,
+                    "Starting game..."
+                );
 
 
-            <!-- HUNGER -->
+                await game.init();
 
-            <div class="statBar hungerBar">
 
-                <span class="statIcon">
-                    🍖
-                </span>
+                setLoading(
+                    100,
+                    "Ready!"
+                );
 
-                <div class="statTrack">
 
-                    <div
-                        id="hungerFill"
-                        class="statFill"
-                        style="width:100%"
-                    ></div>
+                await wait(500);
 
-                </div>
 
-                <span
-                    id="hungerText"
-                    class="statText"
-                >
-                    100/100
-                </span>
+                loadingScreen.classList.add(
+                    "hidden"
+                );
 
-            </div>
 
-        </div>
+                setTimeout(
+                    () => {
 
+                        loadingScreen.remove();
 
-        <!-- =====================================
-             TOP RIGHT BUTTONS
-        ====================================== -->
+                    },
+                    700
+                );
 
-        <div id="topButtons">
 
-            <button
-                id="mapButton"
-                class="hudButton"
-                aria-label="Map"
-            >
-                🗺️
-            </button>
+            } catch (
+                error
+            ) {
 
-            <button
-                id="inventoryButton"
-                class="hudButton"
-                aria-label="Inventory"
-            >
-                🎒
-            </button>
+                console.error(
+                    "PET WORLD ERROR:",
+                    error
+                );
 
-            <button
-                id="settingsHUDButton"
-                class="hudButton"
-                aria-label="Settings"
-            >
-                ⚙️
-            </button>
 
-        </div>
+                loadingText.textContent =
+                    "Game failed to start. Check Console.";
 
+                loadingText.style.color =
+                    "#ff6b6b";
 
-        <!-- =====================================
-             DAY / NIGHT DISPLAY
-        ====================================== -->
+            }
 
-        <div id="worldInfo">
+        }
 
-            <div id="timeIcon">
-                ☀️
-            </div>
 
-            <div>
+        function wait(
+            milliseconds
+        ) {
 
-                <div
-                    id="worldTime"
-                    class="worldTime"
-                >
-                    08:00
-                </div>
+            return new Promise(
+                resolve =>
+                    setTimeout(
+                        resolve,
+                        milliseconds
+                    )
+            );
 
-                <div
-                    id="worldWeather"
-                    class="worldWeather"
-                >
-                    CLEAR
-                </div>
+        }
 
-            </div>
 
-        </div>
+        startGame();
 
+    </script>
 
-        <!-- =====================================
-             TARGET INFORMATION
-        ====================================== -->
 
-        <div
-            id="targetInfo"
-            class="hidden"
-        >
+    <!-- ==========================================
+         LOADING SCREEN STYLE
+         ========================================== -->
 
-            <div
-                id="targetName"
-                class="targetName"
-            >
-                Wild Creature
-            </div>
+    <style>
 
-            <div
-                id="targetLevel"
-                class="targetLevel"
-            >
-                LEVEL 1
-            </div>
+        #loading-screen {
 
-            <div class="targetHealth">
+            position: fixed;
 
-                <div
-                    id="targetHealthFill"
-                    class="targetHealthFill"
-                ></div>
+            inset: 0;
 
-            </div>
+            z-index: 99999;
 
-        </div>
+            display: flex;
 
+            align-items: center;
 
-        <!-- =====================================
-             CROSSHAIR
-        ====================================== -->
+            justify-content: center;
 
-        <div id="crosshair">
+            background:
+                radial-gradient(
+                    circle at center,
+                    #25343b 0%,
+                    #10181d 45%,
+                    #050709 100%
+                );
 
-            <div class="crosshairLine horizontal"></div>
+            color: white;
 
-            <div class="crosshairLine vertical"></div>
+            opacity: 1;
 
-            <div class="crosshairDot"></div>
+            transition:
+                opacity 0.7s ease;
 
-        </div>
+        }
 
 
-        <!-- =====================================
-             INTERACTION MESSAGE
-        ====================================== -->
+        #loading-screen.hidden {
 
-        <div
-            id="interactionMessage"
-            class="hidden"
-        >
+            opacity: 0;
 
-            <span id="interactionIcon">
-                ✋
-            </span>
+            pointer-events: none;
 
-            <span id="interactionText">
-                Interact
-            </span>
+        }
 
-        </div>
 
+        .loading-box {
 
-        <!-- =====================================
-             NOTIFICATION
-        ====================================== -->
+            width:
+                min(430px, 88vw);
 
-        <div
-            id="notificationContainer"
-        ></div>
+            padding: 30px;
 
+            text-align: center;
 
-        <!-- =====================================
-             PET INFORMATION
-        ====================================== -->
+        }
 
-        <div id="petHUD">
 
-            <div class="petHeader">
+        .game-logo {
 
-                <div
-                    id="activePetIcon"
-                    class="petIcon"
-                >
-                    🐾
-                </div>
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
 
-                <div>
+            font-size:
+                clamp(
+                    34px,
+                    9vw,
+                    62px
+                );
 
-                    <div
-                        id="activePetName"
-                        class="petName"
-                    >
-                        No Pet
-                    </div>
+            font-weight: 900;
 
-                    <div
-                        id="activePetLevel"
-                        class="petLevel"
-                    >
-                        --
-                    </div>
+            letter-spacing: 5px;
 
-                </div>
+            text-shadow:
+                0 4px 25px
+                rgba(0, 0, 0, 0.6);
 
-            </div>
+        }
 
-            <div class="petHealth">
 
-                <div
-                    id="petHealthFill"
-                    class="petHealthFill"
-                    style="width:100%"
-                ></div>
+        .loading-subtitle {
 
-            </div>
+            margin-top: 10px;
 
-        </div>
+            color:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.65
+                );
 
+            font-size: 11px;
 
-        <!-- =====================================
-             MOBILE JOYSTICK
-        ====================================== -->
+            letter-spacing: 2px;
 
-        <div
-            id="mobileJoystick"
-            class="mobileControl"
-        >
+        }
 
-            <div
-                id="joystickBase"
-                class="joystickBase"
-            >
 
-                <div
-                    id="joystickStick"
-                    class="joystickStick"
-                ></div>
+        .loading-bar {
 
-            </div>
+            width: 100%;
 
-        </div>
+            height: 7px;
 
+            margin-top: 30px;
 
-        <!-- =====================================
-             MOBILE ACTION BUTTONS
-        ====================================== -->
+            overflow: hidden;
 
-        <div id="mobileActions">
+            border-radius: 20px;
 
-            <button
-                id="jumpButton"
-                class="actionButton jump"
-            >
-                ↑
-            </button>
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.12
+                );
 
-            <button
-                id="dodgeButton"
-                class="actionButton dodge"
-            >
-                ◈
-            </button>
+        }
 
-            <button
-                id="attackButton"
-                class="actionButton attack"
-            >
-                ⚔
-            </button>
 
-            <button
-                id="captureButton"
-                class="actionButton capture"
-            >
-                ◉
-            </button>
+        #loading-progress {
 
-            <button
-                id="petCommandButton"
-                class="actionButton petCommand"
-            >
-                🐾
-            </button>
+            width: 0%;
 
-            <button
-                id="interactButton"
-                class="actionButton interact"
-            >
-                ✋
-            </button>
+            height: 100%;
 
-        </div>
+            border-radius: 20px;
 
+            background:
+                linear-gradient(
+                    90deg,
+                    #52d273,
+                    #a6ffb5
+                );
 
-        <!-- =====================================
-             PET QUICK SLOTS
-        ====================================== -->
+            transition:
+                width 0.3s ease;
 
-        <div id="petQuickSlots">
+        }
 
-            <button
-                class="petSlot active"
-                data-slot="0"
-            >
-                <span>1</span>
-                🐾
-            </button>
 
-            <button
-                class="petSlot"
-                data-slot="1"
-            >
-                <span>2</span>
-                🐾
-            </button>
+        #loading-text {
 
-            <button
-                class="petSlot"
-                data-slot="2"
-            >
-                <span>3</span>
-                🐾
-            </button>
+            margin-top: 13px;
 
-            <button
-                class="petSlot"
-                data-slot="3"
-            >
-                <span>4</span>
-                🐾
-            </button>
+            color:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.75
+                );
 
-        </div>
+            font-size: 13px;
 
+        }
 
-        <!-- =====================================
-             BOTTOM INFORMATION
-        ====================================== -->
 
-        <div id="bottomHint">
-            Explore the world and discover creatures
-        </div>
+        @media (
+            max-width: 600px
+        ) {
 
-    </div>
+            .loading-box {
 
+                padding: 20px;
 
-    <!-- =========================================
-         INVENTORY PANEL
-    ========================================== -->
+            }
 
-    <div
-        id="inventoryPanel"
-        class="gamePanel hidden"
-    >
 
-        <div class="panelHeader">
+            .game-logo {
 
-            <h2>
-                🎒 INVENTORY
-            </h2>
+                letter-spacing: 3px;
 
-            <button
-                class="closePanel"
-                data-panel="inventoryPanel"
-            >
-                ×
-            </button>
+            }
 
-        </div>
 
-        <div class="panelBody">
+            .loading-subtitle {
 
-            <div
-                id="inventoryGrid"
-                class="inventoryGrid"
-            ></div>
+                font-size: 8px;
 
-        </div>
+            }
 
-    </div>
+        }
 
-
-    <!-- =========================================
-         PET PANEL
-    ========================================== -->
-
-    <div
-        id="petPanel"
-        class="gamePanel hidden"
-    >
-
-        <div class="panelHeader">
-
-            <h2>
-                🐾 CREATURES
-            </h2>
-
-            <button
-                class="closePanel"
-                data-panel="petPanel"
-            >
-                ×
-            </button>
-
-        </div>
-
-        <div class="panelBody">
-
-            <div
-                id="petList"
-                class="petList"
-            ></div>
-
-        </div>
-
-    </div>
-
-
-    <!-- =========================================
-         MAP PANEL
-    ========================================== -->
-
-    <div
-        id="mapPanel"
-        class="gamePanel largePanel hidden"
-    >
-
-        <div class="panelHeader">
-
-            <h2>
-                🗺️ WORLD MAP
-            </h2>
-
-            <button
-                class="closePanel"
-                data-panel="mapPanel"
-            >
-                ×
-            </button>
-
-        </div>
-
-        <div
-            id="mapContainer"
-            class="mapContainer"
-        >
-
-            <div class="mapGrid"></div>
-
-            <div
-                id="mapPlayerMarker"
-                class="mapPlayerMarker"
-            >
-                ●
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- =========================================
-         SETTINGS PANEL
-    ========================================== -->
-
-    <div
-        id="settingsPanel"
-        class="gamePanel hidden"
-    >
-
-        <div class="panelHeader">
-
-            <h2>
-                ⚙️ SETTINGS
-            </h2>
-
-            <button
-                class="closePanel"
-                data-panel="settingsPanel"
-            >
-                ×
-            </button>
-
-        </div>
-
-        <div class="settingsList">
-
-            <div class="settingRow">
-
-                <span>
-                    Graphics Quality
-                </span>
-
-                <select id="graphicsQuality">
-
-                    <option value="low">
-                        Low
-                    </option>
-
-                    <option
-                        value="medium"
-                        selected
-                    >
-                        Medium
-                    </option>
-
-                    <option value="high">
-                        High
-                    </option>
-
-                </select>
-
-            </div>
-
-            <div class="settingRow">
-
-                <span>
-                    Sound
-                </span>
-
-                <input
-                    id="soundToggle"
-                    type="checkbox"
-                    checked
-                >
-
-            </div>
-
-            <div class="settingRow">
-
-                <span>
-                    Music
-                </span>
-
-                <input
-                    id="musicToggle"
-                    type="checkbox"
-                    checked
-                >
-
-            </div>
-
-            <div class="settingRow">
-
-                <span>
-                    Shadows
-                </span>
-
-                <input
-                    id="shadowToggle"
-                    type="checkbox"
-                    checked
-                >
-
-            </div>
-
-            <div class="settingRow">
-
-                <span>
-                    Mobile Controls
-                </span>
-
-                <input
-                    id="mobileToggle"
-                    type="checkbox"
-                    checked
-                >
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- =========================================
-         CHARACTER PANEL
-    ========================================== -->
-
-    <div
-        id="characterPanel"
-        class="gamePanel hidden"
-    >
-
-        <div class="panelHeader">
-
-            <h2>
-                👤 CHARACTER
-            </h2>
-
-            <button
-                class="closePanel"
-                data-panel="characterPanel"
-            >
-                ×
-            </button>
-
-        </div>
-
-        <div
-            id="characterStats"
-            class="characterStats"
-        >
-
-            <div>
-                <span>Health</span>
-                <strong>100</strong>
-            </div>
-
-            <div>
-                <span>Attack</span>
-                <strong>10</strong>
-            </div>
-
-            <div>
-                <span>Defense</span>
-                <strong>5</strong>
-            </div>
-
-            <div>
-                <span>Speed</span>
-                <strong>10</strong>
-            </div>
-
-            <div>
-                <span>Experience</span>
-                <strong>0</strong>
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- =========================================
-         CONFIRM DIALOG
-    ========================================== -->
-
-    <div
-        id="confirmDialog"
-        class="dialogOverlay hidden"
-    >
-
-        <div class="dialogBox">
-
-            <h2 id="dialogTitle">
-                Confirm
-            </h2>
-
-            <p id="dialogMessage">
-                Are you sure?
-            </p>
-
-            <div class="dialogButtons">
-
-                <button
-                    id="dialogCancel"
-                    class="dialogButton"
-                >
-                    CANCEL
-                </button>
-
-                <button
-                    id="dialogConfirm"
-                    class="dialogButton primary"
-                >
-                    CONFIRM
-                </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- =========================================
-         ERROR SCREEN
-    ========================================== -->
-
-    <div
-        id="errorScreen"
-        class="screen hidden"
-    >
-
-        <div class="errorBox">
-
-            <h1>
-                GAME ERROR
-            </h1>
-
-            <p id="errorMessage">
-                Something went wrong.
-            </p>
-
-            <button
-                id="reloadButton"
-                class="menuButton primary"
-            >
-                RELOAD GAME
-            </button>
-
-        </div>
-
-    </div>
-
-
-    <!-- =========================================
-         SOCKET.IO
-    ========================================== -->
-
-    <script src="/socket.io/socket.io.js"></script>
-
-
-    <!-- =========================================
-         MAIN GAME SCRIPT
-    ========================================== -->
-
-    <script
-        type="module"
-        src="js/game.js"
-    ></script>
+    </style>
 
 </body>
 
