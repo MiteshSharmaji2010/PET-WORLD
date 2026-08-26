@@ -1,22 +1,27 @@
-import nipplejs from "https://cdn.jsdelivr.net/npm/nipplejs@0.10.2/+esm";
-
 export class MobileControls {
 
     constructor(game) {
 
         this.game = game;
 
-        this.joystick = null;
+        this.enabled =
+            this.isMobileDevice();
 
-        this.moveX = 0;
-        this.moveY = 0;
+        this.lookActive = false;
 
-        this.lookX = 0;
-        this.lookY = 0;
+        this.lookPointerId = null;
 
-        this.touchLookActive = false;
+        this.lastLookX = 0;
 
-        this.createControls();
+        this.lastLookY = 0;
+
+        this.lookSensitivity = 0.004;
+
+        this.jumpPressed = false;
+
+        this.sprintPressed = false;
+
+        this.attackPressed = false;
 
     }
 
@@ -25,279 +30,203 @@ export class MobileControls {
     // INITIALIZE
     // =================================================
 
-    init() {
+    async init() {
 
-        if (
-            !this.isMobile()
-        ) {
+        this.createTouchControls();
 
-            return;
+        this.setupLookControl();
 
-        }
-
-        this.setupJoystick();
-
-        this.setupLook();
-
-        this.setupButtons();
+        this.setupKeyboardFallback();
 
     }
 
 
     // =================================================
-    // DEVICE CHECK
+    // DEVICE DETECTION
     // =================================================
 
-    isMobile() {
+    isMobileDevice() {
 
         return (
-            window.innerWidth <= 900 ||
-            "ontouchstart" in window ||
-            navigator.maxTouchPoints > 0
+            window.matchMedia(
+                "(pointer: coarse)"
+            ).matches ||
+            /Android|iPhone|iPad|iPod/i.test(
+                navigator.userAgent
+            )
         );
 
     }
 
 
     // =================================================
-    // CREATE MOBILE UI
+    // TOUCH INTERFACE
     // =================================================
 
-    createControls() {
+    createTouchControls() {
 
-        this.container =
-            document.createElement("div");
+        const container =
+            document.createElement(
+                "div"
+            );
 
-        this.container.id =
-            "mobile-controls";
 
-        this.container.style.display =
-            "none";
+        container.id =
+            "mobile-extra-controls";
+
+
+        container.innerHTML = `
+
+            <button
+                id="mobile-jump"
+                class="mobile-control-button"
+            >
+                ⬆️
+                <span>JUMP</span>
+            </button>
+
+
+            <button
+                id="mobile-sprint"
+                class="mobile-control-button"
+            >
+                🏃
+                <span>RUN</span>
+            </button>
+
+        `;
+
 
         document.body.appendChild(
-            this.container
+            container
         );
 
 
-        // -----------------------------
-        // JOYSTICK AREA
-        // -----------------------------
-
-        this.joystickZone =
-            document.createElement("div");
-
-        this.joystickZone.id =
-            "joystick-zone";
-
-        this.container.appendChild(
-            this.joystickZone
-        );
+        this.injectStyles();
 
 
-        // -----------------------------
-        // ACTION BUTTONS
-        // -----------------------------
-
-        this.actionContainer =
-            document.createElement("div");
-
-        this.actionContainer.id =
-            "mobile-actions";
-
-        this.container.appendChild(
-            this.actionContainer
-        );
-
-
-        this.jumpButton =
-            this.createActionButton(
-                "⬆️",
+        const jump =
+            document.getElementById(
                 "mobile-jump"
             );
 
 
-        this.sprintButton =
-            this.createActionButton(
-                "🏃",
+        const sprint =
+            document.getElementById(
                 "mobile-sprint"
             );
 
 
-        this.attackButton =
-            this.createActionButton(
-                "⚔️",
-                "mobile-attack"
-            );
+        // Jump
 
+        jump.addEventListener(
+            "pointerdown",
+            event => {
 
-        this.captureButton =
-            this.createActionButton(
-                "🔴",
-                "mobile-capture"
-            );
+                event.preventDefault();
 
+                this.jumpPressed =
+                    true;
 
-        this.actionContainer.appendChild(
-            this.jumpButton
+                this.jump();
+
+            }
         );
 
-        this.actionContainer.appendChild(
-            this.sprintButton
+
+        jump.addEventListener(
+            "pointerup",
+            event => {
+
+                event.preventDefault();
+
+                this.jumpPressed =
+                    false;
+
+            }
         );
 
-        this.actionContainer.appendChild(
-            this.attackButton
+
+        jump.addEventListener(
+            "pointercancel",
+            () => {
+
+                this.jumpPressed =
+                    false;
+
+            }
         );
 
-        this.actionContainer.appendChild(
-            this.captureButton
+
+        // Sprint
+
+        sprint.addEventListener(
+            "pointerdown",
+            event => {
+
+                event.preventDefault();
+
+                this.sprintPressed =
+                    true;
+
+            }
+        );
+
+
+        sprint.addEventListener(
+            "pointerup",
+            event => {
+
+                event.preventDefault();
+
+                this.sprintPressed =
+                    false;
+
+            }
+        );
+
+
+        sprint.addEventListener(
+            "pointercancel",
+            () => {
+
+                this.sprintPressed =
+                    false;
+
+            }
         );
 
     }
 
 
     // =================================================
-    // CREATE BUTTON
+    // CAMERA LOOK
     // =================================================
 
-    createActionButton(
-        text,
-        id
-    ) {
+    setupLookControl() {
 
-        const button =
-            document.createElement(
-                "button"
+        const canvas =
+            document.querySelector(
+                "canvas"
             );
 
-        button.textContent =
-            text;
-
-        button.id =
-            id;
-
-        button.className =
-            "mobile-action";
-
-        button.setAttribute(
-            "aria-label",
-            id
-        );
-
-        return button;
-
-    }
-
-
-    // =================================================
-    // SHOW CONTROLS
-    // =================================================
-
-    show() {
 
         if (
-            !this.isMobile()
+            !canvas
         ) {
 
             return;
 
         }
 
-        this.container.style.display =
-            "block";
 
-    }
-
-
-    // =================================================
-    // JOYSTICK
-    // =================================================
-
-    setupJoystick() {
-
-        this.joystick =
-            nipplejs.create({
-
-                zone:
-                    this.joystickZone,
-
-                mode:
-                    "static",
-
-                position: {
-                    left: "50%",
-                    top: "50%"
-                },
-
-                color:
-                    "white",
-
-                size:
-                    120,
-
-                threshold:
-                    0.1,
-
-                fadeTime:
-                    100
-
-            });
-
-
-        this.joystick.on(
-            "move",
-            (event, data) => {
-
-                if (
-                    !data ||
-                    !data.vector
-                ) {
-
-                    return;
-
-                }
-
-
-                this.moveX =
-                    data.vector.x;
-
-                this.moveY =
-                    data.vector.y;
-
-            }
-        );
-
-
-        this.joystick.on(
-            "end",
-            () => {
-
-                this.moveX = 0;
-
-                this.moveY = 0;
-
-            }
-        );
-
-    }
-
-
-    // =================================================
-    // TOUCH CAMERA
-    // =================================================
-
-    setupLook() {
-
-        const screen =
-            document.body;
-
-
-        screen.addEventListener(
-            "touchstart",
+        canvas.addEventListener(
+            "pointerdown",
             event => {
 
                 if (
-                    !this.isMobile()
+                    event.pointerType ===
+                    "mouse"
                 ) {
 
                     return;
@@ -305,56 +234,49 @@ export class MobileControls {
                 }
 
 
-                for (
-                    const touch
-                    of event.changedTouches
+                // Ignore left joystick area.
+
+                if (
+                    event.clientX <
+                    window.innerWidth *
+                    0.42
                 ) {
 
-                    const x =
-                        touch.clientX;
-
-
-                    // Left side is joystick.
-                    // Right side controls camera.
-
-                    if (
-                        x >
-                        window.innerWidth * 0.45
-                    ) {
-
-                        this.touchLookActive =
-                            true;
-
-                    }
+                    return;
 
                 }
 
-            },
-            {
-                passive: true
+
+                this.lookActive =
+                    true;
+
+
+                this.lookPointerId =
+                    event.pointerId;
+
+
+                this.lastLookX =
+                    event.clientX;
+
+
+                this.lastLookY =
+                    event.clientY;
+
+
+                canvas.setPointerCapture(
+                    event.pointerId
+                );
+
             }
         );
 
 
-        screen.addEventListener(
-            "touchmove",
+        canvas.addEventListener(
+            "pointermove",
             event => {
 
                 if (
-                    !this.touchLookActive
-                ) {
-
-                    return;
-
-                }
-
-
-                const touch =
-                    event.changedTouches[0];
-
-
-                if (
-                    !touch
+                    !this.lookActive
                 ) {
 
                     return;
@@ -363,190 +285,236 @@ export class MobileControls {
 
 
                 if (
-                    this.lastTouchX ===
-                    undefined
+                    event.pointerId !==
+                    this.lookPointerId
                 ) {
-
-                    this.lastTouchX =
-                        touch.clientX;
-
-                    this.lastTouchY =
-                        touch.clientY;
 
                     return;
 
                 }
 
 
-                const dx =
-                    touch.clientX -
-                    this.lastTouchX;
+                const deltaX =
+                    event.clientX -
+                    this.lastLookX;
 
 
-                const dy =
-                    touch.clientY -
-                    this.lastTouchY;
+                const deltaY =
+                    event.clientY -
+                    this.lastLookY;
 
 
-                this.lookX =
-                    dx;
-
-                this.lookY =
-                    dy;
+                this.lastLookX =
+                    event.clientX;
 
 
-                this.lastTouchX =
-                    touch.clientX;
+                this.lastLookY =
+                    event.clientY;
 
-                this.lastTouchY =
-                    touch.clientY;
 
-            },
-            {
-                passive: true
+                this.rotateCamera(
+                    deltaX,
+                    deltaY
+                );
+
             }
         );
 
 
-        screen.addEventListener(
-            "touchend",
-            () => {
+        const stopLook =
+            event => {
 
-                this.touchLookActive =
+                if (
+                    event.pointerId !==
+                    this.lookPointerId
+                ) {
+
+                    return;
+
+                }
+
+
+                this.lookActive =
                     false;
 
-                this.lastTouchX =
-                    undefined;
 
-                this.lastTouchY =
-                    undefined;
+                this.lookPointerId =
+                    null;
 
-                this.lookX = 0;
+            };
 
-                this.lookY = 0;
 
-            },
-            {
-                passive: true
-            }
+        canvas.addEventListener(
+            "pointerup",
+            stopLook
+        );
+
+
+        canvas.addEventListener(
+            "pointercancel",
+            stopLook
         );
 
     }
 
 
     // =================================================
-    // ACTION BUTTONS
+    // CAMERA ROTATION
     // =================================================
 
-    setupButtons() {
+    rotateCamera(
+        deltaX,
+        deltaY
+    ) {
 
-        // -----------------------------
-        // JUMP
-        // -----------------------------
+        const camera =
+            this.game.camera;
 
-        this.jumpButton.addEventListener(
-            "touchstart",
+
+        if (
+            !camera
+        ) {
+
+            return;
+
+        }
+
+
+        camera.rotation.y -=
+            deltaX *
+            this.lookSensitivity;
+
+
+        camera.rotation.x -=
+            deltaY *
+            this.lookSensitivity;
+
+
+        const minimum =
+            -Math.PI / 2 +
+            0.1;
+
+
+        const maximum =
+            Math.PI / 2 -
+            0.1;
+
+
+        camera.rotation.x =
+            Math.max(
+                minimum,
+                Math.min(
+                    maximum,
+                    camera.rotation.x
+                )
+            );
+
+    }
+
+
+    // =================================================
+    // JUMP
+    // =================================================
+
+    jump() {
+
+        const player =
+            this.game.player;
+
+
+        if (
+            !player
+        ) {
+
+            return;
+
+        }
+
+
+        if (
+            typeof player.jump ===
+            "function"
+        ) {
+
+            player.jump();
+
+            return;
+
+        }
+
+
+        if (
+            typeof player.velocity !==
+            "undefined"
+        ) {
+
+            if (
+                player.isGrounded !==
+                false
+            ) {
+
+                player.velocity.y =
+                    7;
+
+            }
+
+        }
+
+    }
+
+
+    // =================================================
+    // KEYBOARD FALLBACK
+    // =================================================
+
+    setupKeyboardFallback() {
+
+        window.addEventListener(
+            "keydown",
             event => {
 
-                event.preventDefault();
-
                 if (
-                    this.game.player
+                    event.code ===
+                    "Space"
                 ) {
 
-                    this.game.player.jump();
+                    this.jump();
 
                 }
 
-            },
-            {
-                passive: false
-            }
-        );
-
-
-        // -----------------------------
-        // SPRINT
-        // -----------------------------
-
-        this.sprintButton.addEventListener(
-            "touchstart",
-            event => {
-
-                event.preventDefault();
 
                 if (
-                    this.game.player
+                    event.code ===
+                    "ShiftLeft" ||
+                    event.code ===
+                    "ShiftRight"
                 ) {
 
-                    this.game.player.mobileSprint =
+                    this.sprintPressed =
                         true;
 
                 }
 
-            },
-            {
-                passive: false
             }
         );
 
 
-        this.sprintButton.addEventListener(
-            "touchend",
+        window.addEventListener(
+            "keyup",
             event => {
 
-                event.preventDefault();
-
                 if (
-                    this.game.player
+                    event.code ===
+                    "ShiftLeft" ||
+                    event.code ===
+                    "ShiftRight"
                 ) {
 
-                    this.game.player.mobileSprint =
+                    this.sprintPressed =
                         false;
 
                 }
 
-            },
-            {
-                passive: false
-            }
-        );
-
-
-        // -----------------------------
-        // ATTACK
-        // -----------------------------
-
-        this.attackButton.addEventListener(
-            "touchstart",
-            event => {
-
-                event.preventDefault();
-
-                this.attack();
-
-            },
-            {
-                passive: false
-            }
-        );
-
-
-        // -----------------------------
-        // CAPTURE
-        // -----------------------------
-
-        this.captureButton.addEventListener(
-            "touchstart",
-            event => {
-
-                event.preventDefault();
-
-                this.capture();
-
-            },
-            {
-                passive: false
             }
         );
 
@@ -554,13 +522,19 @@ export class MobileControls {
 
 
     // =================================================
-    // ATTACK
+    // UPDATE
     // =================================================
 
-    attack() {
+    update(
+        delta
+    ) {
+
+        const player =
+            this.game.player;
+
 
         if (
-            !this.game.creatures
+            !player
         ) {
 
             return;
@@ -568,182 +542,252 @@ export class MobileControls {
         }
 
 
-        const creature =
-            this.game.creatures
-                .getNearestCreature(
-                    4
-                );
+        // Mobile joystick movement.
 
-
-        if (
-            !creature
-        ) {
-
-            if (
-                this.game.ui
-            ) {
-
-                this.game.ui.notify(
-                    "No creature nearby."
-                );
-
-            }
-
-            return;
-
-        }
-
-
-        this.game.creatures
-            .damageCreature(
-                creature,
-                20
+        const moveX =
+            Number(
+                player.mobileMoveX || 0
             );
 
-    }
 
-
-    // =================================================
-    // CAPTURE
-    // =================================================
-
-    capture() {
-
-        if (
-            !this.game.systems
-        ) {
-
-            return;
-
-        }
-
-
-        this.game.systems
-            .captureNearestCreature();
-
-    }
-
-
-    // =================================================
-    // GET MOVEMENT
-    // =================================================
-
-    getMovement() {
-
-        return {
-
-            x:
-                this.moveX,
-
-            z:
-                -this.moveY
-
-        };
-
-    }
-
-
-    // =================================================
-    // GET LOOK
-    // =================================================
-
-    getLook() {
-
-        const result = {
-
-            x:
-                this.lookX,
-
-            y:
-                this.lookY
-
-        };
-
-
-        this.lookX = 0;
-
-        this.lookY = 0;
-
-
-        return result;
-
-    }
-
-
-    // =================================================
-    // UPDATE PLAYER INPUT
-    // =================================================
-
-    update() {
-
-        if (
-            !this.game.player
-        ) {
-
-            return;
-
-        }
-
-
-        const movement =
-            this.getMovement();
-
-
-        this.game.player.mobileMoveX =
-            movement.x;
-
-        this.game.player.mobileMoveZ =
-            movement.z;
-
-
-        const look =
-            this.getLook();
+        const moveZ =
+            Number(
+                player.mobileMoveZ || 0
+            );
 
 
         if (
-            look.x !== 0 ||
-            look.y !== 0
+            typeof player.setMobileInput ===
+            "function"
         ) {
 
-            this.game.player.yaw -=
-                look.x * 0.004;
-
-            this.game.player.pitch -=
-                look.y * 0.004;
-
-
-            this.game.player.pitch =
-                Math.max(
-                    -1.1,
-                    Math.min(
-                        0.7,
-                        this.game.player.pitch
-                    )
-                );
-
-        }
-
-    }
-
-
-    // =================================================
-    // RESIZE
-    // =================================================
-
-    resize() {
-
-        if (
-            this.isMobile()
-        ) {
-
-            this.show();
+            player.setMobileInput(
+                moveX,
+                moveZ,
+                this.sprintPressed
+            );
 
         } else {
 
-            this.container.style.display =
-                "none";
+            player.mobileMoveX =
+                moveX;
+
+            player.mobileMoveZ =
+                moveZ;
+
+            player.mobileSprint =
+                this.sprintPressed;
 
         }
+
+    }
+
+
+    // =================================================
+    // DISABLE
+    // =================================================
+
+    disable() {
+
+        this.enabled =
+            false;
+
+    }
+
+
+    // =================================================
+    // ENABLE
+    // =================================================
+
+    enable() {
+
+        this.enabled =
+            true;
+
+    }
+
+
+    // =================================================
+    // CSS
+    // =================================================
+
+    injectStyles() {
+
+        const style =
+            document.createElement(
+                "style"
+            );
+
+
+        style.textContent = `
+
+            #mobile-extra-controls {
+
+                position: fixed;
+
+                inset: 0;
+
+                z-index: 110;
+
+                pointer-events: none;
+
+            }
+
+
+            .mobile-control-button {
+
+                position: absolute;
+
+                width: 65px;
+
+                height: 65px;
+
+                border-radius: 50%;
+
+                border: 2px solid
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.18
+                    );
+
+                background:
+                    rgba(
+                        10,
+                        15,
+                        20,
+                        0.65
+                    );
+
+                color: white;
+
+                display: flex;
+
+                flex-direction: column;
+
+                align-items: center;
+
+                justify-content: center;
+
+                font-size: 21px;
+
+                pointer-events: auto;
+
+                touch-action: none;
+
+                user-select: none;
+
+                box-shadow:
+                    0 5px 20px
+                    rgba(
+                        0,
+                        0,
+                        0,
+                        0.35
+                    );
+
+            }
+
+
+            .mobile-control-button span {
+
+                font-size: 7px;
+
+                margin-top: 2px;
+
+                font-weight: 800;
+
+                letter-spacing: 0.5px;
+
+            }
+
+
+            .mobile-control-button:active {
+
+                transform:
+                    scale(0.9);
+
+                background:
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.18
+                    );
+
+            }
+
+
+            #mobile-jump {
+
+                right: 105px;
+
+                bottom: 35px;
+
+            }
+
+
+            #mobile-sprint {
+
+                right: 25px;
+
+                bottom: 105px;
+
+            }
+
+
+            @media (
+                min-width: 800px
+            ) {
+
+                #mobile-extra-controls {
+
+                    display: none;
+
+                }
+
+            }
+
+
+            @media (
+                max-width: 600px
+            ) {
+
+                #mobile-jump {
+
+                    right: 90px;
+
+                    bottom: 25px;
+
+                }
+
+
+                #mobile-sprint {
+
+                    right: 20px;
+
+                    bottom: 100px;
+
+                }
+
+
+                .mobile-control-button {
+
+                    width: 58px;
+
+                    height: 58px;
+
+                }
+
+            }
+
+        `;
+
+
+        document.head.appendChild(
+            style
+        );
 
     }
 
