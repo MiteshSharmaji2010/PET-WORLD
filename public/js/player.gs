@@ -6,47 +6,109 @@ export class Player {
 
         this.game = game;
 
+        // =============================================
+        // PLAYER OBJECT
+        // =============================================
+
         this.object = null;
 
-        this.velocity = new THREE.Vector3();
+        this.body = null;
 
-        this.direction = new THREE.Vector3();
+        this.head = null;
 
-        this.health = 100;
+
+        // =============================================
+        // PLAYER STATS
+        // =============================================
+
         this.maxHealth = 100;
 
-        this.stamina = 100;
+        this.health = 100;
+
         this.maxStamina = 100;
 
-        this.hunger = 100;
+        this.stamina = 100;
+
         this.maxHunger = 100;
 
-        this.speed = 5;
-        this.sprintSpeed = 8;
+        this.hunger = 100;
 
-        this.jumpPower = 8;
 
-        this.gravity = 22;
+        // =============================================
+        // MOVEMENT
+        // =============================================
+
+        this.walkSpeed = 4;
+
+        this.sprintSpeed = 7;
+
+        this.jumpPower = 7;
+
+        this.gravity = 20;
+
+        this.velocity = new THREE.Vector3();
 
         this.isGrounded = true;
 
         this.isSprinting = false;
 
+
+        // =============================================
+        // INPUT
+        // =============================================
+
+        this.keys = {
+
+            forward: false,
+
+            backward: false,
+
+            left: false,
+
+            right: false,
+
+            jump: false,
+
+            sprint: false
+
+        };
+
+
+        // Mobile
+
         this.mobileMoveX = 0;
+
         this.mobileMoveZ = 0;
 
         this.mobileSprint = false;
 
-        this.yaw = 0;
-        this.pitch = -0.25;
 
-        this.cameraDistance = 7;
+        // =============================================
+        // CAMERA
+        // =============================================
 
-        this.cameraHeight = 3.2;
+        this.cameraDistance = 5;
 
-        this.keys = {};
+        this.cameraHeight = 2.2;
 
-        this.setupKeyboard();
+        this.cameraSmoothness = 8;
+
+
+        // =============================================
+        // STATE
+        // =============================================
+
+        this.spawnPosition =
+            new THREE.Vector3(
+                0,
+                2,
+                0
+            );
+
+
+        this.damageCooldown = 0;
+
+        this.hungerTimer = 0;
 
     }
 
@@ -57,95 +119,189 @@ export class Player {
 
     async init() {
 
-        this.createPlayer();
+        this.createModel();
 
-        this.setupCamera();
+        this.setupKeyboard();
+
+        this.spawn();
 
     }
 
 
     // =================================================
-    // PLAYER MODEL
+    // CREATE PLAYER MODEL
     // =================================================
 
-    createPlayer() {
+    createModel() {
 
         const group =
             new THREE.Group();
 
 
+        // =============================================
+        // MATERIALS
+        // =============================================
+
+        const skinMaterial =
+            new THREE.MeshStandardMaterial({
+
+                color: 0xd29b78,
+
+                roughness: 0.8
+
+            });
+
+
+        const shirtMaterial =
+            new THREE.MeshStandardMaterial({
+
+                color: 0x334b67,
+
+                roughness: 0.85
+
+            });
+
+
+        const pantsMaterial =
+            new THREE.MeshStandardMaterial({
+
+                color: 0x252a30,
+
+                roughness: 0.9
+
+            });
+
+
+        const shoeMaterial =
+            new THREE.MeshStandardMaterial({
+
+                color: 0x111111,
+
+                roughness: 0.95
+
+            });
+
+
+        // =============================================
         // BODY
+        // =============================================
 
         const bodyGeometry =
             new THREE.CapsuleGeometry(
-                0.42,
-                1.0,
+                0.38,
+                0.75,
                 6,
                 10
             );
 
 
-        const bodyMaterial =
-            new THREE.MeshStandardMaterial({
-                color: 0x3b6edc,
-                roughness: 0.8
-            });
-
-
-        const body =
+        this.body =
             new THREE.Mesh(
                 bodyGeometry,
-                bodyMaterial
+                shirtMaterial
             );
 
 
-        body.position.y =
-            1.05;
+        this.body.position.y =
+            1.15;
 
 
-        body.castShadow = true;
-
-        body.receiveShadow = true;
-
-
-        group.add(body);
+        this.body.castShadow =
+            true;
 
 
+        group.add(
+            this.body
+        );
+
+
+        // =============================================
         // HEAD
+        // =============================================
 
         const headGeometry =
             new THREE.SphereGeometry(
-                0.38,
+                0.32,
                 16,
                 12
             );
 
 
-        const headMaterial =
-            new THREE.MeshStandardMaterial({
-                color: 0xd49b76,
-                roughness: 0.8
-            });
-
-
-        const head =
+        this.head =
             new THREE.Mesh(
                 headGeometry,
-                headMaterial
+                skinMaterial
             );
 
 
-        head.position.y =
+        this.head.position.y =
             1.95;
 
 
-        head.castShadow = true;
+        this.head.castShadow =
+            true;
 
 
-        group.add(head);
+        group.add(
+            this.head
+        );
 
 
+        // =============================================
+        // HAIR
+        // =============================================
+
+        const hairGeometry =
+            new THREE.SphereGeometry(
+                0.34,
+                16,
+                8,
+                0,
+                Math.PI * 2,
+                0,
+                Math.PI * 0.55
+            );
+
+
+        const hairMaterial =
+            new THREE.MeshStandardMaterial({
+
+                color: 0x151515,
+
+                roughness: 0.9
+
+            });
+
+
+        const hair =
+            new THREE.Mesh(
+                hairGeometry,
+                hairMaterial
+            );
+
+
+        hair.position.y =
+            2.04;
+
+
+        hair.castShadow =
+            true;
+
+
+        group.add(
+            hair
+        );
+
+
+        // =============================================
         // EYES
+        // =============================================
+
+        const eyeMaterial =
+            new THREE.MeshBasicMaterial({
+                color: 0x111111
+            });
+
 
         const eyeGeometry =
             new THREE.SphereGeometry(
@@ -153,12 +309,6 @@ export class Player {
                 8,
                 8
             );
-
-
-        const eyeMaterial =
-            new THREE.MeshBasicMaterial({
-                color: 0x111111
-            });
 
 
         const leftEye =
@@ -169,76 +319,142 @@ export class Player {
 
 
         leftEye.position.set(
-            -0.13,
-            2.0,
-            -0.34
+            -0.11,
+            1.98,
+            -0.29
         );
 
 
         const rightEye =
-            new THREE.Mesh(
-                eyeGeometry,
-                eyeMaterial
-            );
+            leftEye.clone();
 
 
-        rightEye.position.set(
-            0.13,
-            2.0,
-            -0.34
+        rightEye.position.x =
+            0.11;
+
+
+        group.add(
+            leftEye
+        );
+
+        group.add(
+            rightEye
         );
 
 
-        group.add(leftEye);
-        group.add(rightEye);
+        // =============================================
+        // LEGS
+        // =============================================
 
-
-        // SHADOW
-
-        const shadowGeometry =
-            new THREE.CircleGeometry(
-                0.55,
-                24
+        const legGeometry =
+            new THREE.CapsuleGeometry(
+                0.15,
+                0.65,
+                5,
+                8
             );
 
 
-        const shadowMaterial =
-            new THREE.MeshBasicMaterial({
-
-                color: 0x000000,
-
-                transparent: true,
-
-                opacity: 0.25
-
-            });
-
-
-        const shadow =
+        const leftLeg =
             new THREE.Mesh(
-                shadowGeometry,
-                shadowMaterial
+                legGeometry,
+                pantsMaterial
             );
 
 
-        shadow.rotation.x =
-            -Math.PI / 2;
-
-
-        shadow.position.y =
-            0.02;
-
-
-        group.add(shadow);
-
-
-        // PLAYER POSITION
-
-        group.position.set(
-            0,
-            0,
+        leftLeg.position.set(
+            -0.18,
+            0.43,
             0
         );
+
+
+        const rightLeg =
+            leftLeg.clone();
+
+
+        rightLeg.position.x =
+            0.18;
+
+
+        leftLeg.castShadow =
+            true;
+
+
+        rightLeg.castShadow =
+            true;
+
+
+        group.add(
+            leftLeg
+        );
+
+        group.add(
+            rightLeg
+        );
+
+
+        // =============================================
+        // SHOES
+        // =============================================
+
+        const shoeGeometry =
+            new THREE.BoxGeometry(
+                0.28,
+                0.16,
+                0.48
+            );
+
+
+        const leftShoe =
+            new THREE.Mesh(
+                shoeGeometry,
+                shoeMaterial
+            );
+
+
+        leftShoe.position.set(
+            -0.18,
+            0.08,
+            -0.05
+        );
+
+
+        const rightShoe =
+            leftShoe.clone();
+
+
+        rightShoe.position.x =
+            0.18;
+
+
+        leftShoe.castShadow =
+            true;
+
+
+        rightShoe.castShadow =
+            true;
+
+
+        group.add(
+            leftShoe
+        );
+
+        group.add(
+            rightShoe
+        );
+
+
+        // =============================================
+        // COLLISION SIZE
+        // =============================================
+
+        group.userData.radius =
+            0.45;
+
+
+        group.userData.height =
+            2.25;
 
 
         this.object =
@@ -253,16 +469,40 @@ export class Player {
 
 
     // =================================================
-    // CAMERA
+    // SPAWN
     // =================================================
 
-    setupCamera() {
+    spawn() {
 
-        this.game.camera.position.set(
-            0,
-            4,
-            7
+        if (
+            !this.object
+        ) {
+
+            return;
+
+        }
+
+
+        this.object.position.copy(
+            this.spawnPosition
         );
+
+
+        this.velocity.set(
+            0,
+            0,
+            0
+        );
+
+
+        this.health =
+            this.maxHealth;
+
+        this.stamina =
+            this.maxStamina;
+
+        this.hunger =
+            this.maxHunger;
 
     }
 
@@ -277,17 +517,61 @@ export class Player {
             "keydown",
             event => {
 
-                this.keys[
+                switch (
                     event.code
-                ] = true;
-
-
-                if (
-                    event.code ===
-                    "Space"
                 ) {
 
-                    this.jump();
+                    case "KeyW":
+                    case "ArrowUp":
+
+                        this.keys.forward =
+                            true;
+
+                        break;
+
+
+                    case "KeyS":
+                    case "ArrowDown":
+
+                        this.keys.backward =
+                            true;
+
+                        break;
+
+
+                    case "KeyA":
+                    case "ArrowLeft":
+
+                        this.keys.left =
+                            true;
+
+                        break;
+
+
+                    case "KeyD":
+                    case "ArrowRight":
+
+                        this.keys.right =
+                            true;
+
+                        break;
+
+
+                    case "Space":
+
+                        this.keys.jump =
+                            true;
+
+                        break;
+
+
+                    case "ShiftLeft":
+                    case "ShiftRight":
+
+                        this.keys.sprint =
+                            true;
+
+                        break;
 
                 }
 
@@ -299,9 +583,63 @@ export class Player {
             "keyup",
             event => {
 
-                this.keys[
+                switch (
                     event.code
-                ] = false;
+                ) {
+
+                    case "KeyW":
+                    case "ArrowUp":
+
+                        this.keys.forward =
+                            false;
+
+                        break;
+
+
+                    case "KeyS":
+                    case "ArrowDown":
+
+                        this.keys.backward =
+                            false;
+
+                        break;
+
+
+                    case "KeyA":
+                    case "ArrowLeft":
+
+                        this.keys.left =
+                            false;
+
+                        break;
+
+
+                    case "KeyD":
+                    case "ArrowRight":
+
+                        this.keys.right =
+                            false;
+
+                        break;
+
+
+                    case "Space":
+
+                        this.keys.jump =
+                            false;
+
+                        break;
+
+
+                    case "ShiftLeft":
+                    case "ShiftRight":
+
+                        this.keys.sprint =
+                            false;
+
+                        break;
+
+                }
 
             }
         );
@@ -310,316 +648,39 @@ export class Player {
 
 
     // =================================================
-    // MOVEMENT
+    // MOBILE INPUT
     // =================================================
 
-    update(delta) {
-
-        if (
-            !this.object
-        ) {
-
-            return;
-
-        }
-
-
-        this.handleMovement(
-            delta
-        );
-
-
-        this.applyGravity(
-            delta
-        );
-
-
-        this.updateNeeds(
-            delta
-        );
-
-
-        this.updateCamera(
-            delta
-        );
-
-
-        this.updateRotation();
-
-    }
-
-
-    // =================================================
-    // HANDLE MOVEMENT
-    // =================================================
-
-    handleMovement(delta) {
-
-        let x = 0;
-        let z = 0;
-
-
-        // KEYBOARD
-
-        if (
-            this.keys[
-                "KeyW"
-            ] ||
-            this.keys[
-                "ArrowUp"
-            ]
-        ) {
-
-            z -= 1;
-
-        }
-
-
-        if (
-            this.keys[
-                "KeyS"
-            ] ||
-            this.keys[
-                "ArrowDown"
-            ]
-        ) {
-
-            z += 1;
-
-        }
-
-
-        if (
-            this.keys[
-                "KeyA"
-            ] ||
-            this.keys[
-                "ArrowLeft"
-            ]
-        ) {
-
-            x -= 1;
-
-        }
-
-
-        if (
-            this.keys[
-                "KeyD"
-            ] ||
-            this.keys[
-                "ArrowRight"
-            ]
-        ) {
-
-            x += 1;
-
-        }
-
-
-        // MOBILE
-
-        if (
-            Math.abs(
-                this.mobileMoveX
-            ) > 0.01 ||
-            Math.abs(
-                this.mobileMoveZ
-            ) > 0.01
-        ) {
-
-            x =
-                this.mobileMoveX;
-
-            z =
-                this.mobileMoveZ;
-
-        }
-
-
-        const length =
-            Math.sqrt(
-                x * x +
-                z * z
-            );
-
-
-        if (
-            length > 1
-        ) {
-
-            x /= length;
-            z /= length;
-
-        }
-
-
-        // SPRINT
-
-        const sprintPressed =
-            this.keys[
-                "ShiftLeft"
-            ] ||
-            this.keys[
-                "ShiftRight"
-            ] ||
-            this.mobileSprint;
-
-
-        this.isSprinting =
-            sprintPressed &&
-            length > 0 &&
-            this.stamina > 1;
-
-
-        let speed =
-            this.isSprinting
-                ? this.sprintSpeed
-                : this.speed;
-
-
-        if (
-            this.isSprinting
-        ) {
-
-            this.stamina -=
-                20 * delta;
-
-        } else {
-
-            this.stamina +=
-                12 * delta;
-
-        }
-
-
-        this.stamina =
-            THREE.MathUtils.clamp(
-                this.stamina,
-                0,
-                this.maxStamina
-            );
-
-
-        // MOVEMENT RELATIVE TO CAMERA
-
-        const forward =
-            new THREE.Vector3();
-
-        this.game.camera
-            .getWorldDirection(
-                forward
-            );
-
-
-        forward.y = 0;
-
-        forward.normalize();
-
-
-        const right =
-            new THREE.Vector3()
-                .crossVectors(
-                    forward,
-                    new THREE.Vector3(
-                        0,
-                        1,
-                        0
-                    )
+    setMobileInput(
+        x,
+        z,
+        sprint = false
+    ) {
+
+        this.mobileMoveX =
+            Math.max(
+                -1,
+                Math.min(
+                    1,
+                    Number(x) || 0
                 )
-                .normalize();
+            );
 
 
-        const movement =
-            new THREE.Vector3();
+        this.mobileMoveZ =
+            Math.max(
+                -1,
+                Math.min(
+                    1,
+                    Number(z) || 0
+                )
+            );
 
 
-        movement.addScaledVector(
-            forward,
-            -z
-        );
-
-
-        movement.addScaledVector(
-            right,
-            x
-        );
-
-
-        if (
-            movement.lengthSq() > 0
-        ) {
-
-            movement.normalize();
-
-
-            this.object.position.x +=
-                movement.x *
-                speed *
-                delta;
-
-
-            this.object.position.z +=
-                movement.z *
-                speed *
-                delta;
-
-
-            const targetRotation =
-                Math.atan2(
-                    movement.x,
-                    movement.z
-                );
-
-
-            this.object.rotation.y =
-                this.smoothRotation(
-                    this.object.rotation.y,
-                    targetRotation,
-                    delta * 10
-                );
-
-        }
-
-    }
-
-
-    // =================================================
-    // GRAVITY
-    // =================================================
-
-    applyGravity(delta) {
-
-        if (
-            !this.isGrounded
-        ) {
-
-            this.velocity.y -=
-                this.gravity *
-                delta;
-
-        }
-
-
-        this.object.position.y +=
-            this.velocity.y *
-            delta;
-
-
-        if (
-            this.object.position.y <= 0
-        ) {
-
-            this.object.position.y =
-                0;
-
-            this.velocity.y =
-                0;
-
-            this.isGrounded =
-                true;
-
-        }
+        this.mobileSprint =
+            Boolean(
+                sprint
+            );
 
     }
 
@@ -634,7 +695,16 @@ export class Player {
             !this.isGrounded
         ) {
 
-            return;
+            return false;
+
+        }
+
+
+        if (
+            this.stamina < 8
+        ) {
+
+            return false;
 
         }
 
@@ -646,46 +716,580 @@ export class Player {
         this.isGrounded =
             false;
 
+
+        this.stamina -=
+            8;
+
+
+        return true;
+
     }
 
 
     // =================================================
-    // NEEDS
+    // DAMAGE
     // =================================================
 
-    updateNeeds(delta) {
+    damage(
+        amount
+    ) {
 
-        this.hunger -=
-            0.7 *
-            delta;
+        if (
+            this.damageCooldown >
+            0
+        ) {
+
+            return;
+
+        }
 
 
-        this.hunger =
-            THREE.MathUtils.clamp(
-                this.hunger,
+        amount =
+            Math.max(
                 0,
-                this.maxHunger
+                Number(amount) || 0
             );
 
 
+        this.health -=
+            amount;
+
+
+        this.damageCooldown =
+            0.35;
+
+
         if (
-            this.hunger <= 0
+            this.game.ui
         ) {
 
-            this.health -=
-                2 *
-                delta;
+            this.game.ui.notify(
+                `-${Math.round(amount)} HP`
+            );
 
         }
 
 
         if (
-            this.health <= 0
+            this.health <=
+            0
         ) {
 
-            this.health = 0;
+            this.health =
+                0;
 
-            this.respawn();
+            this.die();
+
+        }
+
+    }
+
+
+    // =================================================
+    // HEAL
+    // =================================================
+
+    heal(
+        amount
+    ) {
+
+        amount =
+            Math.max(
+                0,
+                Number(amount) || 0
+            );
+
+
+        this.health =
+            Math.min(
+                this.maxHealth,
+                this.health +
+                amount
+            );
+
+    }
+
+
+    // =================================================
+    // MOVEMENT
+    // =================================================
+
+    update(
+        delta
+    ) {
+
+        if (
+            !this.object
+        ) {
+
+            return;
+
+        }
+
+
+        this.damageCooldown =
+            Math.max(
+                0,
+                this.damageCooldown -
+                delta
+            );
+
+
+        this.updateMovement(
+            delta
+        );
+
+
+        this.updateGravity(
+            delta
+        );
+
+
+        this.updateHunger(
+            delta
+        );
+
+
+        this.updateCamera(
+            delta
+        );
+
+
+        this.updateAnimation(
+            delta
+        );
+
+    }
+
+
+    // =================================================
+    // MOVEMENT INPUT
+    // =================================================
+
+    updateMovement(
+        delta
+    ) {
+
+        const keyboardX =
+            (
+                this.keys.right
+                    ? 1
+                    : 0
+            ) -
+            (
+                this.keys.left
+                    ? 1
+                    : 0
+            );
+
+
+        const keyboardZ =
+            (
+                this.keys.backward
+                    ? 1
+                    : 0
+            ) -
+            (
+                this.keys.forward
+                    ? 1
+                    : 0
+            );
+
+
+        let moveX =
+            keyboardX;
+
+
+        let moveZ =
+            keyboardZ;
+
+
+        // Mobile takes priority.
+
+        if (
+            Math.abs(
+                this.mobileMoveX
+            ) >
+            0.05 ||
+            Math.abs(
+                this.mobileMoveZ
+            ) >
+            0.05
+        ) {
+
+            moveX =
+                this.mobileMoveX;
+
+            moveZ =
+                this.mobileMoveZ;
+
+        }
+
+
+        const inputLength =
+            Math.sqrt(
+                moveX * moveX +
+                moveZ * moveZ
+            );
+
+
+        if (
+            inputLength >
+            1
+        ) {
+
+            moveX /=
+                inputLength;
+
+            moveZ /=
+                inputLength;
+
+        }
+
+
+        this.isSprinting =
+            (
+                this.keys.sprint ||
+                this.mobileSprint
+            ) &&
+            inputLength >
+            0.1 &&
+            this.stamina >
+            1;
+
+
+        const speed =
+            this.isSprinting
+                ? this.sprintSpeed
+                : this.walkSpeed;
+
+
+        if (
+            inputLength >
+            0.05
+        ) {
+
+            const camera =
+                this.game.camera;
+
+
+            const forward =
+                new THREE.Vector3(
+                    0,
+                    0,
+                    -1
+                );
+
+
+            forward.applyQuaternion(
+                camera.quaternion
+            );
+
+
+            forward.y =
+                0;
+
+
+            forward.normalize();
+
+
+            const right =
+                new THREE.Vector3(
+                    1,
+                    0,
+                    0
+                );
+
+
+            right.applyQuaternion(
+                camera.quaternion
+            );
+
+
+            right.y =
+                0;
+
+
+            right.normalize();
+
+
+            const direction =
+                new THREE.Vector3();
+
+
+            direction.addScaledVector(
+                right,
+                moveX
+            );
+
+
+            direction.addScaledVector(
+                forward,
+                -moveZ
+            );
+
+
+            direction.normalize();
+
+
+            this.velocity.x =
+                direction.x *
+                speed;
+
+
+            this.velocity.z =
+                direction.z *
+                speed;
+
+
+            // Face movement direction.
+
+            const targetRotation =
+                Math.atan2(
+                    direction.x,
+                    direction.z
+                );
+
+
+            this.object.rotation.y =
+                this.smoothRotation(
+                    this.object.rotation.y,
+                    targetRotation,
+                    delta * 10
+                );
+
+
+            // Sprint consumes stamina.
+
+            if (
+                this.isSprinting
+            ) {
+
+                this.stamina -=
+                    20 *
+                    delta;
+
+            } else {
+
+                this.stamina +=
+                    12 *
+                    delta;
+
+            }
+
+        } else {
+
+            this.velocity.x =
+                THREE.MathUtils.damp(
+                    this.velocity.x,
+                    0,
+                    8,
+                    delta
+                );
+
+
+            this.velocity.z =
+                THREE.MathUtils.damp(
+                    this.velocity.z,
+                    0,
+                    8,
+                    delta
+                );
+
+
+            this.stamina +=
+                16 *
+                delta;
+
+        }
+
+
+        this.stamina =
+            Math.max(
+                0,
+                Math.min(
+                    this.maxStamina,
+                    this.stamina
+                )
+            );
+
+
+        if (
+            this.keys.jump
+        ) {
+
+            this.jump();
+
+        }
+
+    }
+
+
+    // =================================================
+    // GRAVITY
+    // =================================================
+
+    updateGravity(
+        delta
+    ) {
+
+        this.velocity.y -=
+            this.gravity *
+            delta;
+
+
+        this.object.position.y +=
+            this.velocity.y *
+            delta;
+
+
+        const ground =
+            this.getGroundHeight();
+
+
+        if (
+            this.object.position.y <=
+            ground
+        ) {
+
+            this.object.position.y =
+                ground;
+
+
+            this.velocity.y =
+                0;
+
+
+            this.isGrounded =
+                true;
+
+        } else {
+
+            this.isGrounded =
+                false;
+
+        }
+
+
+        this.object.position.x +=
+            this.velocity.x *
+            delta;
+
+
+        this.object.position.z +=
+            this.velocity.z *
+            delta;
+
+
+        this.limitWorldBounds();
+
+    }
+
+
+    // =================================================
+    // GROUND
+    // =================================================
+
+    getGroundHeight() {
+
+        if (
+            this.game.world &&
+            typeof this.game.world
+                .getTerrainHeight ===
+                "function"
+        ) {
+
+            return this.game.world
+                .getTerrainHeight(
+                    this.object.position.x,
+                    this.object.position.z
+                );
+
+        }
+
+
+        return 0;
+
+    }
+
+
+    // =================================================
+    // WORLD BOUNDS
+    // =================================================
+
+    limitWorldBounds() {
+
+        const limit =
+            250;
+
+
+        this.object.position.x =
+            Math.max(
+                -limit,
+                Math.min(
+                    limit,
+                    this.object.position.x
+                )
+            );
+
+
+        this.object.position.z =
+            Math.max(
+                -limit,
+                Math.min(
+                    limit,
+                    this.object.position.z
+                )
+            );
+
+    }
+
+
+    // =================================================
+    // HUNGER
+    // =================================================
+
+    updateHunger(
+        delta
+    ) {
+
+        this.hungerTimer +=
+            delta;
+
+
+        if (
+            this.hungerTimer <
+            10
+        ) {
+
+            return;
+
+        }
+
+
+        this.hungerTimer =
+            0;
+
+
+        this.hunger =
+            Math.max(
+                0,
+                this.hunger -
+                0.5
+            );
+
+
+        if (
+            this.hunger <=
+            0
+        ) {
+
+            this.health =
+                Math.max(
+                    1,
+                    this.health -
+                    1
+                );
 
         }
 
@@ -696,7 +1300,22 @@ export class Player {
     // CAMERA
     // =================================================
 
-    updateCamera(delta) {
+    updateCamera(
+        delta
+    ) {
+
+        const camera =
+            this.game.camera;
+
+
+        if (
+            !camera
+        ) {
+
+            return;
+
+        }
+
 
         const target =
             this.object.position
@@ -707,46 +1326,154 @@ export class Player {
             this.cameraHeight;
 
 
-        const rotation =
-            new THREE.Euler(
-                this.pitch,
-                this.yaw,
-                0,
-                "YXZ"
-            );
-
-
-        const offset =
+        const cameraOffset =
             new THREE.Vector3(
                 0,
-                0,
+                1.2,
                 this.cameraDistance
             );
 
 
-        offset.applyEuler(
-            rotation
+        cameraOffset.applyQuaternion(
+            camera.quaternion
         );
 
 
-        const desiredPosition =
+        const desired =
             target.clone()
-                .add(offset);
+                .add(
+                    cameraOffset
+                );
 
 
-        this.game.camera.position.lerp(
-            desiredPosition,
+        const smoothing =
             1 -
-            Math.pow(
-                0.001,
+            Math.exp(
+                -this.cameraSmoothness *
                 delta
-            )
+            );
+
+
+        camera.position.lerp(
+            desired,
+            smoothing
+        );
+
+    }
+
+
+    // =================================================
+    // ANIMATION
+    // =================================================
+
+    updateAnimation(
+        delta
+    ) {
+
+        if (
+            !this.body
+        ) {
+
+            return;
+
+        }
+
+
+        const horizontalSpeed =
+            Math.sqrt(
+                this.velocity.x *
+                    this.velocity.x +
+                this.velocity.z *
+                    this.velocity.z
+            );
+
+
+        if (
+            horizontalSpeed >
+            0.2
+        ) {
+
+            const time =
+                this.game.elapsed ||
+                0;
+
+
+            this.body.rotation.z =
+                Math.sin(
+                    time * 10
+                ) *
+                0.03;
+
+
+            this.head.rotation.z =
+                Math.sin(
+                    time * 10
+                ) *
+                0.015;
+
+        } else {
+
+            this.body.rotation.z =
+                THREE.MathUtils.damp(
+                    this.body.rotation.z,
+                    0,
+                    8,
+                    delta
+                );
+
+
+            this.head.rotation.z =
+                THREE.MathUtils.damp(
+                    this.head.rotation.z,
+                    0,
+                    8,
+                    delta
+                );
+
+        }
+
+    }
+
+
+    // =================================================
+    // DEATH
+    // =================================================
+
+    die() {
+
+        this.health =
+            this.maxHealth;
+
+
+        this.stamina =
+            this.maxStamina;
+
+
+        this.hunger =
+            this.maxHunger;
+
+
+        this.velocity.set(
+            0,
+            0,
+            0
         );
 
 
-        this.game.camera.lookAt(
-            target
+        this.object.position.copy(
+            this.spawnPosition
         );
+
+
+        if (
+            this.game.ui
+        ) {
+
+            this.game.ui.notify(
+                "You died! Respawning..."
+            );
+
+        }
 
     }
 
@@ -754,19 +1481,6 @@ export class Player {
     // =================================================
     // ROTATION
     // =================================================
-
-    updateRotation() {
-
-        if (
-            !this.object
-        ) {
-
-            return;
-
-        }
-
-    }
-
 
     smoothRotation(
         current,
@@ -805,128 +1519,10 @@ export class Player {
             current +
             difference *
             Math.min(
-                amount,
-                1
+                1,
+                amount
             )
         );
-
-    }
-
-
-    // =================================================
-    // DAMAGE
-    // =================================================
-
-    damage(amount) {
-
-        this.health -=
-            Math.max(
-                0,
-                amount
-            );
-
-
-        this.health =
-            THREE.MathUtils.clamp(
-                this.health,
-                0,
-                this.maxHealth
-            );
-
-
-        if (
-            this.health <= 0
-        ) {
-
-            this.respawn();
-
-        }
-
-    }
-
-
-    // =================================================
-    // HEAL
-    // =================================================
-
-    heal(amount) {
-
-        this.health +=
-            Math.max(
-                0,
-                amount
-            );
-
-
-        this.health =
-            THREE.MathUtils.clamp(
-                this.health,
-                0,
-                this.maxHealth
-            );
-
-    }
-
-
-    // =================================================
-    // FOOD
-    // =================================================
-
-    eat(amount = 25) {
-
-        this.hunger +=
-            amount;
-
-
-        this.hunger =
-            THREE.MathUtils.clamp(
-                this.hunger,
-                0,
-                this.maxHunger
-            );
-
-    }
-
-
-    // =================================================
-    // RESPAWN
-    // =================================================
-
-    respawn() {
-
-        this.health =
-            this.maxHealth;
-
-        this.hunger =
-            70;
-
-        this.stamina =
-            this.maxStamina;
-
-
-        this.velocity.set(
-            0,
-            0,
-            0
-        );
-
-
-        this.object.position.set(
-            0,
-            0,
-            0
-        );
-
-
-        if (
-            this.game.ui
-        ) {
-
-            this.game.ui.notify(
-                "You were defeated and returned to camp."
-            );
-
-        }
 
     }
 
