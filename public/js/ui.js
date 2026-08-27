@@ -1,4 +1,4 @@
-export class UI {
+export class GameUI {
 
     constructor(game) {
 
