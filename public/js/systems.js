@@ -1284,7 +1284,9 @@ this.notify(
 
 
         this.notify(
-            `🐾 ${pet.name} is now active!`
+    this.notify(
+    "PET " + pet.name + " is now active!"
+);
         );
 
 
