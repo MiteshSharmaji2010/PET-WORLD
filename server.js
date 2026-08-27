@@ -1,255 +1,398 @@
-"use strict";
+import express from "express";
+import http from "http";
+import path from "path";
+import { fileURLToPath } from "url";
+import { Server } from "socket.io";
 
-const express = require("express");
-const path = require("path");
-const http = require("http");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
-
 const server = http.createServer(app);
 
-const PORT =
-    process.env.PORT || 3000;
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
 
-
-// =====================================================
-// SECURITY / BASIC SETTINGS
-// =====================================================
+const PORT = process.env.PORT || 3000;
 
 app.disable("x-powered-by");
 
-
-// =====================================================
-// STATIC FILES
-// =====================================================
-
-const publicPath =
-    path.join(
-        __dirname,
-        "public"
-    );
-
+app.use(
+    express.json({
+        limit: "1mb"
+    })
+);
 
 app.use(
     express.static(
-        publicPath,
+        path.join(__dirname, "public"),
         {
-            extensions: [
-                "html"
-            ],
-
-            maxAge:
-                process.env.NODE_ENV ===
-                "production"
-                    ? "1d"
-                    : 0
+            extensions: ["html"]
         }
     )
 );
 
+/*
+|--------------------------------------------------------------------------
+| HEALTH CHECK
+|--------------------------------------------------------------------------
+*/
 
-// =====================================================
-// HEALTH CHECK
-// =====================================================
+app.get("/health", (req, res) => {
 
-app.get(
-    "/health",
-    (req, res) => {
+    res.status(200).json({
+        status: "ok",
+        game: "PET WORLD",
+        serverTime: new Date().toISOString(),
+        players: io.engine.clientsCount
+    });
 
-        res.status(200).json({
+});
 
-            status:
-                "ok",
+/*
+|--------------------------------------------------------------------------
+| GAME INFO
+|--------------------------------------------------------------------------
+*/
 
-            game:
-                "PET WORLD",
+app.get("/api/game", (req, res) => {
 
-            server:
-                "running",
+    res.json({
+        name: "PET WORLD",
+        version: "1.0.0",
+        online: true,
+        players: io.engine.clientsCount
+    });
 
-            time:
-                new Date().toISOString()
+});
 
-        });
+/*
+|--------------------------------------------------------------------------
+| SPA / INDEX FALLBACK
+|--------------------------------------------------------------------------
+*/
 
-    }
-);
+app.get("*", (req, res) => {
 
+    res.sendFile(
+        path.join(
+            __dirname,
+            "public",
+            "index.html"
+        )
+    );
 
-// =====================================================
-// GAME ROUTE
-// =====================================================
+});
 
-app.get(
-    "/",
-    (req, res) => {
+/*
+|--------------------------------------------------------------------------
+| MULTIPLAYER MEMORY
+|--------------------------------------------------------------------------
+*/
 
-        res.sendFile(
-            path.join(
-                publicPath,
-                "index.html"
-            )
-        );
+const players = new Map();
 
-    }
-);
+/*
+|--------------------------------------------------------------------------
+| SOCKET.IO
+|--------------------------------------------------------------------------
+*/
 
+io.on("connection", (socket) => {
 
-// =====================================================
-// 404 HANDLER
-// =====================================================
+    console.log(
+        `[CONNECT] ${socket.id}`
+    );
 
-app.use(
-    (req, res) => {
+    const player = {
+        id: socket.id,
+        x: 0,
+        y: 0,
+        z: 0,
+        rotation: 0,
+        name: `Player-${socket.id.slice(0, 5)}`,
+        level: 1,
+        health: 100
+    };
 
-        res.status(404).send(
-            `
-            <!DOCTYPE html>
+    players.set(
+        socket.id,
+        player
+    );
 
-            <html>
+    /*
+    |--------------------------------------------------------------------------
+    | SEND CURRENT PLAYERS TO NEW PLAYER
+    |--------------------------------------------------------------------------
+    */
 
-            <head>
+    socket.emit(
+        "worldState",
+        Array.from(players.values())
+    );
 
-                <meta charset="UTF-8">
+    /*
+    |--------------------------------------------------------------------------
+    | INFORM OTHER PLAYERS
+    |--------------------------------------------------------------------------
+    */
 
-                <meta
-                    name="viewport"
-                    content="width=device-width,initial-scale=1"
-                >
+    socket.broadcast.emit(
+        "playerJoined",
+        player
+    );
 
-                <title>PET WORLD - 404</title>
+    /*
+    |--------------------------------------------------------------------------
+    | PLAYER UPDATE
+    |--------------------------------------------------------------------------
+    */
 
-                <style>
+    socket.on(
+        "playerUpdate",
+        (data) => {
 
-                    body {
-                        margin: 0;
-                        min-height: 100vh;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        background: #10161a;
-                        color: white;
-                        font-family: Arial, sans-serif;
-                        text-align: center;
-                    }
+            if (
+                !data ||
+                typeof data !== "object"
+            ) {
+                return;
+            }
 
-                    .box {
-                        padding: 30px;
-                    }
+            const current =
+                players.get(
+                    socket.id
+                );
 
-                    h1 {
-                        font-size: 48px;
-                        margin-bottom: 10px;
-                    }
+            if (!current) {
+                return;
+            }
 
-                    a {
-                        color: #75e08a;
-                        text-decoration: none;
-                    }
+            if (
+                Number.isFinite(
+                    Number(data.x)
+                )
+            ) {
+                current.x =
+                    Number(data.x);
+            }
 
-                </style>
+            if (
+                Number.isFinite(
+                    Number(data.y)
+                )
+            ) {
+                current.y =
+                    Number(data.y);
+            }
 
-            </head>
+            if (
+                Number.isFinite(
+                    Number(data.z)
+                )
+            ) {
+                current.z =
+                    Number(data.z);
+            }
 
-            <body>
+            if (
+                Number.isFinite(
+                    Number(data.rotation)
+                )
+            ) {
+                current.rotation =
+                    Number(data.rotation);
+            }
 
-                <div class="box">
+            if (
+                typeof data.name ===
+                "string"
+            ) {
 
-                    <h1>404</h1>
+                current.name =
+                    data.name
+                        .trim()
+                        .slice(0, 24) ||
+                    current.name;
 
-                    <p>
-                        This PET WORLD page does not exist.
-                    </p>
+            }
 
-                    <a href="/">
-                        Return to Game
-                    </a>
+            if (
+                Number.isFinite(
+                    Number(data.level)
+                )
+            ) {
 
-                </div>
+                current.level =
+                    Math.max(
+                        1,
+                        Math.floor(
+                            Number(data.level)
+                        )
+                    );
 
-            </body>
+            }
 
-            </html>
-            `
-        );
+            if (
+                Number.isFinite(
+                    Number(data.health)
+                )
+            ) {
 
-    }
-);
+                current.health =
+                    Math.max(
+                        0,
+                        Math.min(
+                            100,
+                            Number(data.health)
+                        )
+                    );
 
+            }
 
-// =====================================================
-// ERROR HANDLER
-// =====================================================
-
-app.use(
-    (
-        error,
-        req,
-        res,
-        next
-    ) => {
-
-        console.error(
-            "Server error:",
-            error
-        );
-
-
-        if (
-            res.headersSent
-        ) {
-
-            return next(
-                error
+            socket.broadcast.emit(
+                "playerUpdate",
+                current
             );
 
         }
+    );
 
+    /*
+    |--------------------------------------------------------------------------
+    | CHAT
+    |--------------------------------------------------------------------------
+    */
 
-        res.status(500).json({
+    socket.on(
+        "chatMessage",
+        (message) => {
 
-            error:
-                "Internal server error",
+            if (
+                typeof message !==
+                "string"
+            ) {
+                return;
+            }
 
-            message:
-                process.env.NODE_ENV ===
-                "production"
-                    ? "Something went wrong."
-                    : error.message
+            const text =
+                message
+                    .trim()
+                    .slice(0, 200);
 
-        });
+            if (!text) {
+                return;
+            }
+
+            io.emit(
+                "chatMessage",
+                {
+                    id: socket.id,
+                    name: player.name,
+                    message: text,
+                    time: Date.now()
+                }
+            );
+
+        }
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | PET EVENT
+    |--------------------------------------------------------------------------
+    */
+
+    socket.on(
+        "petUpdate",
+        (data) => {
+
+            socket.broadcast.emit(
+                "petUpdate",
+                {
+                    playerId: socket.id,
+                    data
+                }
+            );
+
+        }
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | DISCONNECT
+    |--------------------------------------------------------------------------
+    */
+
+    socket.on(
+        "disconnect",
+        () => {
+
+            console.log(
+                `[DISCONNECT] ${socket.id}`
+            );
+
+            players.delete(
+                socket.id
+            );
+
+            socket.broadcast.emit(
+                "playerLeft",
+                socket.id
+            );
+
+        }
+    );
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| SERVER ERROR
+|--------------------------------------------------------------------------
+*/
+
+server.on(
+    "error",
+    (error) => {
+
+        console.error(
+            "SERVER ERROR:",
+            error
+        );
 
     }
 );
 
-
-// =====================================================
-// START SERVER
-// =====================================================
+/*
+|--------------------------------------------------------------------------
+| START
+|--------------------------------------------------------------------------
+*/
 
 server.listen(
     PORT,
+    "0.0.0.0",
     () => {
 
-        console.log("");
         console.log(
-            "======================================"
+            "================================="
         );
 
         console.log(
-            "        PET WORLD SERVER"
+            "       PET WORLD SERVER"
         );
 
         console.log(
-            "======================================"
+            "================================="
         );
 
         console.log(
-            `Game: http://localhost:${PORT}`
-        );
-
-        console.log(
-            `Health: http://localhost:${PORT}/health`
+            `PORT: ${PORT}`
         );
 
         console.log(
@@ -260,114 +403,7 @@ server.listen(
         );
 
         console.log(
-            "======================================"
-        );
-
-        console.log("");
-
-    }
-);
-
-
-// =====================================================
-// SERVER ERROR
-// =====================================================
-
-server.on(
-    "error",
-    error => {
-
-        if (
-            error.code ===
-            "EADDRINUSE"
-        ) {
-
-            console.error(
-                `Port ${PORT} is already in use.`
-            );
-
-            console.error(
-                "Close the other server or use another PORT."
-            );
-
-        } else {
-
-            console.error(
-                "Server startup error:",
-                error
-            );
-
-        }
-
-
-        process.exit(
-            1
-        );
-
-    }
-);
-
-
-// =====================================================
-// GRACEFUL SHUTDOWN
-// =====================================================
-
-function shutdown(
-    signal
-) {
-
-    console.log(
-        `${signal} received. Shutting down...`
-    );
-
-
-    server.close(
-        () => {
-
-            console.log(
-                "Server stopped."
-            );
-
-            process.exit(
-                0
-            );
-
-        }
-    );
-
-
-    setTimeout(
-        () => {
-
-            process.exit(
-                1
-            );
-
-        },
-        5000
-    );
-
-}
-
-
-process.on(
-    "SIGINT",
-    () => {
-
-        shutdown(
-            "SIGINT"
-        );
-
-    }
-);
-
-
-process.on(
-    "SIGTERM",
-    () => {
-
-        shutdown(
-            "SIGTERM"
+            "Server started successfully."
         );
 
     }
