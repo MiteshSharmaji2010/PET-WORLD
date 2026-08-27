@@ -1578,7 +1578,9 @@ this.notify(
 
 
         this.notify(
-            `🪙 +${amount} coins`
+      this.notify(
+    "+" + amount + " coins"
+);
         );
 
 
