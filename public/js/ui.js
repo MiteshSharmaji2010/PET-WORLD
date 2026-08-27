@@ -1,399 +1,317 @@
-export class GameUI {
+export class UI {
 
     constructor(game) {
 
         this.game = game;
 
-        this.root = null;
+        this.inventoryOpen = false;
 
-        this.notificationBox = null;
+        this.mapOpen = false;
 
-        this.healthFill = null;
+        this.petOpen = false;
 
-        this.staminaFill = null;
+        this.settingsOpen = false;
 
-        this.hungerFill = null;
-
-        this.levelText = null;
-
-        this.xpText = null;
-
-        this.petText = null;
-
-        this.inventoryPanel = null;
-
-        this.petPanel = null;
-
-        this.pausePanel = null;
-
-        this.isInventoryOpen = false;
-
-        this.isPetPanelOpen = false;
-
-        this.isPaused = false;
+        this.initialized = false;
 
     }
 
-
-    // =================================================
-    // INITIALIZE
-    // =================================================
 
     async init() {
 
-        this.createInterface();
+        this.createUI();
 
-        this.updateStats(
-            this.game.systems
-        );
+        this.bindEvents();
+
+        this.initialized = true;
 
     }
 
 
-    // =================================================
-    // MAIN INTERFACE
-    // =================================================
+    createUI() {
 
-    createInterface() {
+        if (
+            document.getElementById(
+                "pet-world-ui"
+            )
+        ) {
 
-        this.root =
-            document.createElement(
-                "div"
-            );
+            return;
 
-
-        this.root.id =
-            "game-ui";
+        }
 
 
-        document.body.appendChild(
-            this.root
-        );
+        const ui =
+            document.createElement("div");
+
+        ui.id =
+            "pet-world-ui";
+
+        ui.innerHTML = `
+
+            <div id="pet-world-panels">
+
+                <!-- INVENTORY -->
+
+                <div
+                    id="inventory-panel"
+                    class="game-panel hidden"
+                >
+
+                    <div class="panel-header">
+
+                        <span>🎒 INVENTORY</span>
+
+                        <button
+                            id="close-inventory"
+                            class="close-button"
+                        >
+                            ×
+                        </button>
+
+                    </div>
+
+                    <div
+                        id="inventory-items"
+                        class="inventory-grid"
+                    ></div>
+
+                </div>
 
 
-        this.createTopHUD();
+                <!-- PETS -->
 
-        this.createCrosshair();
+                <div
+                    id="pets-panel"
+                    class="game-panel hidden"
+                >
 
-        this.createActionButtons();
+                    <div class="panel-header">
 
-        this.createMobileControls();
+                        <span>🐾 MY PETS</span>
 
-        this.createNotificationBox();
+                        <button
+                            id="close-pets"
+                            class="close-button"
+                        >
+                            ×
+                        </button>
 
-        this.createInventoryPanel();
+                    </div>
 
-        this.createPetPanel();
+                    <div
+                        id="pets-list"
+                        class="pets-list"
+                    ></div>
 
-        this.createPausePanel();
+                </div>
+
+
+                <!-- MAP -->
+
+                <div
+                    id="map-panel"
+                    class="game-panel map-panel hidden"
+                >
+
+                    <div class="panel-header">
+
+                        <span>🗺️ WORLD MAP</span>
+
+                        <button
+                            id="close-map"
+                            class="close-button"
+                        >
+                            ×
+                        </button>
+
+                    </div>
+
+                    <div
+                        id="world-map"
+                        class="world-map"
+                    >
+
+                        <div
+                            id="player-map-marker"
+                            class="player-map-marker"
+                        >
+                            ●
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- SETTINGS -->
+
+                <div
+                    id="settings-panel"
+                    class="game-panel hidden"
+                >
+
+                    <div class="panel-header">
+
+                        <span>⚙️ SETTINGS</span>
+
+                        <button
+                            id="close-settings"
+                            class="close-button"
+                        >
+                            ×
+                        </button>
+
+                    </div>
+
+
+                    <div class="settings-content">
+
+                        <button
+                            id="save-game-button"
+                            class="settings-button"
+                        >
+                            💾 SAVE GAME
+                        </button>
+
+
+                        <button
+                            id="reset-game-button"
+                            class="settings-button danger"
+                        >
+                            🗑️ RESET GAME
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- PET BUTTON -->
+
+            <button
+                id="pet-menu-button"
+                class="floating-button pet-button"
+            >
+                🐾
+            </button>
+
+
+            <!-- INVENTORY BUTTON -->
+
+            <button
+                id="inventory-floating-button"
+                class="floating-button inventory-button"
+            >
+                🎒
+            </button>
+
+
+            <!-- PET INFO -->
+
+            <div
+                id="active-pet-info"
+                class="active-pet-info hidden"
+            >
+
+                <div
+                    id="active-pet-name"
+                    class="active-pet-name"
+                >
+                    No Pet
+                </div>
+
+                <div class="pet-health-bar">
+
+                    <div
+                        id="active-pet-health"
+                    ></div>
+
+                </div>
+
+            </div>
+
+
+            <!-- XP -->
+
+            <div
+                id="xp-container"
+                class="xp-container"
+            >
+
+                <div class="xp-label">
+
+                    <span>LEVEL</span>
+
+                    <strong
+                        id="ui-level"
+                    >
+                        1
+                    </strong>
+
+                </div>
+
+
+                <div class="xp-bar">
+
+                    <div
+                        id="ui-xp-fill"
+                    ></div>
+
+                </div>
+
+            </div>
+
+        `;
+
+
+        document.body.appendChild(ui);
 
         this.injectStyles();
 
     }
 
 
-    // =================================================
-    // TOP HUD
-    // =================================================
+    bindEvents() {
 
-    createTopHUD() {
-
-        const hud =
-            document.createElement(
-                "div"
-            );
-
-
-        hud.className =
-            "top-hud";
-
-
-        // Player stats
-
-        const playerStats =
-            document.createElement(
-                "div"
-            );
-
-
-        playerStats.className =
-            "player-stats";
-
-
-        // Health
-
-        playerStats.innerHTML = `
-
-            <div class="stat-row">
-
-                <span class="stat-icon">
-                    ❤️
-                </span>
-
-                <div class="stat-bar">
-
-                    <div
-                        id="health-fill"
-                        class="stat-fill health-fill"
-                    ></div>
-
-                </div>
-
-            </div>
-
-
-            <div class="stat-row">
-
-                <span class="stat-icon">
-                    ⚡
-                </span>
-
-                <div class="stat-bar">
-
-                    <div
-                        id="stamina-fill"
-                        class="stat-fill stamina-fill"
-                    ></div>
-
-                </div>
-
-            </div>
-
-
-            <div class="stat-row">
-
-                <span class="stat-icon">
-                    🍖
-                </span>
-
-                <div class="stat-bar">
-
-                    <div
-                        id="hunger-fill"
-                        class="stat-fill hunger-fill"
-                    ></div>
-
-                </div>
-
-            </div>
-
-        `;
-
-
-        hud.appendChild(
-            playerStats
-        );
-
-
-        // Level
-
-        const levelBox =
-            document.createElement(
-                "div"
-            );
-
-
-        levelBox.className =
-            "level-box";
-
-
-        levelBox.innerHTML = `
-
-            <div id="level-text">
-                LV 1
-            </div>
-
-            <div id="xp-text">
-                XP 0 / 100
-            </div>
-
-        `;
-
-
-        hud.appendChild(
-            levelBox
-        );
-
-
-        // Pet
-
-        const petBox =
-            document.createElement(
-                "div"
-            );
-
-
-        petBox.className =
-            "active-pet-box";
-
-
-        petBox.innerHTML = `
-
-            <div class="pet-title">
-                🐾 ACTIVE PET
-            </div>
-
-            <div id="pet-text">
-                No Pet
-            </div>
-
-        `;
-
-
-        hud.appendChild(
-            petBox
-        );
-
-
-        this.root.appendChild(
-            hud
-        );
-
-
-        this.healthFill =
+        const inventoryButton =
             document.getElementById(
-                "health-fill"
+                "inventory-button"
             );
 
 
-        this.staminaFill =
+        const inventoryFloating =
             document.getElementById(
-                "stamina-fill"
+                "inventory-floating-button"
             );
 
 
-        this.hungerFill =
+        const petButton =
             document.getElementById(
-                "hunger-fill"
+                "pet-menu-button"
             );
 
 
-        this.levelText =
+        const mapButton =
             document.getElementById(
-                "level-text"
+                "map-button"
             );
 
 
-        this.xpText =
+        const settingsButton =
             document.getElementById(
-                "xp-text"
+                "settings-button"
             );
 
 
-        this.petText =
-            document.getElementById(
-                "pet-text"
-            );
+        if (
+            inventoryButton
+        ) {
 
-    }
-
-
-    // =================================================
-    // CROSSHAIR
-    // =================================================
-
-    createCrosshair() {
-
-        const crosshair =
-            document.createElement(
-                "div"
-            );
-
-
-        crosshair.id =
-            "crosshair";
-
-
-        crosshair.innerHTML =
-            "+";
-
-
-        this.root.appendChild(
-            crosshair
-        );
-
-    }
-
-
-    // =================================================
-    // ACTION BUTTONS
-    // =================================================
-
-    createActionButtons() {
-
-        const container =
-            document.createElement(
-                "div"
-            );
-
-
-        container.className =
-            "action-buttons";
-
-
-        // Capture
-
-        const capture =
-            this.createButton(
-                "🎯",
-                "CAPTURE",
-                () => {
-
-                    if (
-                        this.game.systems
-                    ) {
-
-                        this.game.systems
-                            .captureNearestCreature();
-
-                    }
-
-                }
-            );
-
-
-        capture.id =
-            "capture-button";
-
-
-        // Attack
-
-        const attack =
-            this.createButton(
-                "⚔️",
-                "ATTACK",
-                () => {
-
-                    this.playerAttack();
-
-                }
-            );
-
-
-        attack.id =
-            "attack-button";
-
-
-        // Pet
-
-        const pet =
-            this.createButton(
-                "🐾",
-                "PETS",
-                () => {
-
-                    this.togglePetPanel();
-
-                }
-            );
-
-
-        // Inventory
-
-        const inventory =
-            this.createButton(
-                "🎒",
-                "BAG",
+            inventoryButton.addEventListener(
+                "click",
                 () => {
 
                     this.toggleInventory();
@@ -401,756 +319,460 @@ export class GameUI {
                 }
             );
 
-
-        // Map
-
-        const map =
-            this.createButton(
-                "🗺️",
-                "MAP",
-                () => {
-
-                    this.notify(
-                        "Map system coming soon."
-                    );
-
-                }
-            );
-
-
-        // Pause
-
-        const pause =
-            this.createButton(
-                "⏸️",
-                "PAUSE",
-                () => {
-
-                    this.togglePause();
-
-                }
-            );
-
-
-        container.appendChild(
-            capture
-        );
-
-        container.appendChild(
-            attack
-        );
-
-        container.appendChild(
-            pet
-        );
-
-        container.appendChild(
-            inventory
-        );
-
-        container.appendChild(
-            map
-        );
-
-        container.appendChild(
-            pause
-        );
-
-
-        this.root.appendChild(
-            container
-        );
-
-    }
-
-
-    // =================================================
-    // BUTTON
-    // =================================================
-
-    createButton(
-        icon,
-        text,
-        callback
-    ) {
-
-        const button =
-            document.createElement(
-                "button"
-            );
-
-
-        button.className =
-            "game-button";
-
-
-        button.innerHTML = `
-
-            <span class="button-icon">
-                ${icon}
-            </span>
-
-            <span class="button-text">
-                ${text}
-            </span>
-
-        `;
-
-
-        button.addEventListener(
-            "pointerdown",
-            event => {
-
-                event.preventDefault();
-
-                callback();
-
-            }
-        );
-
-
-        return button;
-
-    }
-
-
-    // =================================================
-    // ATTACK
-    // =================================================
-
-    playerAttack() {
-
-        const creatures =
-            this.game.creatures;
-
-
-        if (
-            !creatures
-        ) {
-
-            return;
-
         }
 
 
-        const creature =
-            creatures.getNearestCreature(
-                4
-            );
-
-
         if (
-            !creature
+            inventoryFloating
         ) {
 
-            this.notify(
-                "No creature in attack range."
-            );
-
-            return;
-
-        }
-
-
-        creatures.damageCreature(
-            creature,
-            25
-        );
-
-
-        this.notify(
-            `You attacked ${creature.name}!`
-        );
-
-    }
-
-
-    // =================================================
-    // MOBILE CONTROLS
-    // =================================================
-
-    createMobileControls() {
-
-        const joystick =
-            document.createElement(
-                "div"
-            );
-
-
-        joystick.id =
-            "mobile-joystick";
-
-
-        joystick.innerHTML = `
-
-            <div id="joystick-base">
-
-                <div id="joystick-stick">
-                </div>
-
-            </div>
-
-        `;
-
-
-        this.root.appendChild(
-            joystick
-        );
-
-
-        this.setupJoystick();
-
-    }
-
-
-    // =================================================
-    // JOYSTICK
-    // =================================================
-
-    setupJoystick() {
-
-        const base =
-            document.getElementById(
-                "joystick-base"
-            );
-
-
-        const stick =
-            document.getElementById(
-                "joystick-stick"
-            );
-
-
-        let active =
-            false;
-
-
-        let pointerId =
-            null;
-
-
-        const radius =
-            48;
-
-
-        const updateJoystick =
-            event => {
-
-                if (
-                    !active ||
-                    event.pointerId !==
-                    pointerId
-                ) {
-
-                    return;
-
-                }
-
-
-                const rect =
-                    base.getBoundingClientRect();
-
-
-                const centerX =
-                    rect.left +
-                    rect.width / 2;
-
-
-                const centerY =
-                    rect.top +
-                    rect.height / 2;
-
-
-                let x =
-                    event.clientX -
-                    centerX;
-
-
-                let y =
-                    event.clientY -
-                    centerY;
-
-
-                const distance =
-                    Math.sqrt(
-                        x * x +
-                        y * y
-                    );
-
-
-                if (
-                    distance >
-                    radius
-                ) {
-
-                    x =
-                        x /
-                        distance *
-                        radius;
-
-                    y =
-                        y /
-                        distance *
-                        radius;
-
-                }
-
-
-                stick.style.transform =
-                    `translate(${x}px, ${y}px)`;
-
-
-                if (
-                    this.game.player
-                ) {
-
-                    this.game.player
-                        .mobileMoveX =
-                        x / radius;
-
-
-                    this.game.player
-                        .mobileMoveZ =
-                        y / radius;
-
-                }
-
-            };
-
-
-        const stopJoystick =
-            event => {
-
-                if (
-                    event.pointerId !==
-                    pointerId
-                ) {
-
-                    return;
-
-                }
-
-
-                active =
-                    false;
-
-
-                pointerId =
-                    null;
-
-
-                stick.style.transform =
-                    "translate(0px, 0px)";
-
-
-                if (
-                    this.game.player
-                ) {
-
-                    this.game.player
-                        .mobileMoveX =
-                        0;
-
-
-                    this.game.player
-                        .mobileMoveZ =
-                        0;
-
-                }
-
-            };
-
-
-        base.addEventListener(
-            "pointerdown",
-            event => {
-
-                event.preventDefault();
-
-
-                active =
-                    true;
-
-
-                pointerId =
-                    event.pointerId;
-
-
-                base.setPointerCapture(
-                    event.pointerId
-                );
-
-
-                updateJoystick(
-                    event
-                );
-
-            }
-        );
-
-
-        base.addEventListener(
-            "pointermove",
-            updateJoystick
-        );
-
-
-        base.addEventListener(
-            "pointerup",
-            stopJoystick
-        );
-
-
-        base.addEventListener(
-            "pointercancel",
-            stopJoystick
-        );
-
-    }
-
-
-    // =================================================
-    // NOTIFICATIONS
-    // =================================================
-
-    createNotificationBox() {
-
-        this.notificationBox =
-            document.createElement(
-                "div"
-            );
-
-
-        this.notificationBox.id =
-            "notification-box";
-
-
-        this.root.appendChild(
-            this.notificationBox
-        );
-
-    }
-
-
-    notify(
-        message,
-        duration = 2500
-    ) {
-
-        if (
-            !this.notificationBox
-        ) {
-
-            return;
-
-        }
-
-
-        const notification =
-            document.createElement(
-                "div"
-            );
-
-
-        notification.className =
-            "notification";
-
-
-        notification.textContent =
-            message;
-
-
-        this.notificationBox.appendChild(
-            notification
-        );
-
-
-        setTimeout(
-            () => {
-
-                notification.classList.add(
-                    "hide"
-                );
-
-
-                setTimeout(
-                    () => {
-
-                        notification.remove();
-
-                    },
-                    300
-                );
-
-            },
-            duration
-        );
-
-    }
-
-
-    // =================================================
-    // INVENTORY PANEL
-    // =================================================
-
-    createInventoryPanel() {
-
-        this.inventoryPanel =
-            document.createElement(
-                "div"
-            );
-
-
-        this.inventoryPanel.id =
-            "inventory-panel";
-
-
-        this.inventoryPanel.className =
-            "game-panel hidden";
-
-
-        this.inventoryPanel.innerHTML = `
-
-            <div class="panel-header">
-
-                <h2>
-                    🎒 INVENTORY
-                </h2>
-
-                <button
-                    id="inventory-close"
-                    class="close-button"
-                >
-                    ✕
-                </button>
-
-            </div>
-
-            <div
-                id="inventory-content"
-                class="panel-content"
-            ></div>
-
-        `;
-
-
-        this.root.appendChild(
-            this.inventoryPanel
-        );
-
-
-        document
-            .getElementById(
-                "inventory-close"
-            )
-            .addEventListener(
+            inventoryFloating.addEventListener(
                 "click",
                 () => {
 
-                    this.toggleInventory(
-                        false
+                    this.toggleInventory();
+
+                }
+            );
+
+        }
+
+
+        if (
+            petButton
+        ) {
+
+            petButton.addEventListener(
+                "click",
+                () => {
+
+                    this.togglePets();
+
+                }
+            );
+
+        }
+
+
+        if (
+            mapButton
+        ) {
+
+            mapButton.addEventListener(
+                "click",
+                () => {
+
+                    this.toggleMap();
+
+                }
+            );
+
+        }
+
+
+        if (
+            settingsButton
+        ) {
+
+            settingsButton.addEventListener(
+                "click",
+                () => {
+
+                    this.toggleSettings();
+
+                }
+            );
+
+        }
+
+
+        this.bindClose(
+            "close-inventory",
+            () => this.closeAll()
+        );
+
+
+        this.bindClose(
+            "close-pets",
+            () => this.closeAll()
+        );
+
+
+        this.bindClose(
+            "close-map",
+            () => this.closeAll()
+        );
+
+
+        this.bindClose(
+            "close-settings",
+            () => this.closeAll()
+        );
+
+
+        const saveButton =
+            document.getElementById(
+                "save-game-button"
+            );
+
+
+        if (
+            saveButton
+        ) {
+
+            saveButton.addEventListener(
+                "click",
+                () => {
+
+                    if (
+                        this.game.systems
+                    ) {
+
+                        this.game.systems.saveGame();
+
+                        this.notify(
+                            "💾 Game saved"
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        const resetButton =
+            document.getElementById(
+                "reset-game-button"
+            );
+
+
+        if (
+            resetButton
+        ) {
+
+            resetButton.addEventListener(
+                "click",
+                () => {
+
+                    const confirmed =
+                        window.confirm(
+                            "Reset your complete game?"
+                        );
+
+
+                    if (
+                        !confirmed
+                    ) {
+
+                        return;
+
+                    }
+
+
+                    if (
+                        this.game.systems
+                    ) {
+
+                        this.game.systems.resetGame();
+
+                    }
+
+                }
+            );
+
+        }
+
+    }
+
+
+    bindClose(
+        id,
+        callback
+    ) {
+
+        const element =
+            document.getElementById(id);
+
+
+        if (
+            element
+        ) {
+
+            element.addEventListener(
+                "click",
+                callback
+            );
+
+        }
+
+    }
+
+
+    toggleInventory() {
+
+        this.closeAll();
+
+        const panel =
+            document.getElementById(
+                "inventory-panel"
+            );
+
+
+        if (
+            !panel
+        ) {
+
+            return;
+
+        }
+
+
+        panel.classList.remove(
+            "hidden"
+        );
+
+
+        this.inventoryOpen =
+            true;
+
+
+        this.updateInventory();
+
+    }
+
+
+    togglePets() {
+
+        this.closeAll();
+
+        const panel =
+            document.getElementById(
+                "pets-panel"
+            );
+
+
+        if (
+            !panel
+        ) {
+
+            return;
+
+        }
+
+
+        panel.classList.remove(
+            "hidden"
+        );
+
+
+        this.petOpen =
+            true;
+
+
+        this.updatePets();
+
+    }
+
+
+    toggleMap() {
+
+        this.closeAll();
+
+        const panel =
+            document.getElementById(
+                "map-panel"
+            );
+
+
+        if (
+            !panel
+        ) {
+
+            return;
+
+        }
+
+
+        panel.classList.remove(
+            "hidden"
+        );
+
+
+        this.mapOpen =
+            true;
+
+
+        this.updateMap();
+
+    }
+
+
+    toggleSettings() {
+
+        this.closeAll();
+
+        const panel =
+            document.getElementById(
+                "settings-panel"
+            );
+
+
+        if (
+            !panel
+        ) {
+
+            return;
+
+        }
+
+
+        panel.classList.remove(
+            "hidden"
+        );
+
+
+        this.settingsOpen =
+            true;
+
+    }
+
+
+    closeAll() {
+
+        document
+            .querySelectorAll(
+                ".game-panel"
+            )
+            .forEach(
+                panel => {
+
+                    panel.classList.add(
+                        "hidden"
                     );
 
                 }
             );
 
+
+        this.inventoryOpen =
+            false;
+
+        this.petOpen =
+            false;
+
+        this.mapOpen =
+            false;
+
+        this.settingsOpen =
+            false;
+
     }
 
 
-    // =================================================
-    // UPDATE INVENTORY
-    // =================================================
-
     updateInventory() {
 
-        const content =
+        const container =
             document.getElementById(
-                "inventory-content"
+                "inventory-items"
             );
 
 
         if (
-            !content ||
+            !container ||
             !this.game.systems
         ) {
 
             return;
 
         }
+
+
+        container.innerHTML = "";
 
 
         const inventory =
             this.game.systems.inventory;
 
 
-        content.innerHTML =
-            "";
+        const itemNames = {
 
+            wood: "🪵 Wood",
 
-        for (
-            const [
-                item,
-                amount
-            ]
-            of Object.entries(
-                inventory
-            )
-        ) {
+            stone: "🪨 Stone",
 
-            const row =
-                document.createElement(
-                    "div"
-                );
+            fiber: "🌿 Fiber",
 
+            food: "🍖 Food",
 
-            row.className =
-                "inventory-item";
+            captureOrb: "🔵 Capture Orb",
 
-
-            row.innerHTML = `
-
-                <span>
-                    ${this.getItemIcon(item)}
-                    ${this.formatItemName(item)}
-                </span>
-
-                <strong>
-                    ${amount}
-                </strong>
-
-            `;
-
-
-            content.appendChild(
-                row
-            );
-
-        }
-
-    }
-
-
-    // =================================================
-    // ITEM ICON
-    // =================================================
-
-    getItemIcon(
-        item
-    ) {
-
-        const icons = {
-
-            captureOrb:
-                "🎯",
-
-            food:
-                "🍖",
-
-            wood:
-                "🪵",
-
-            stone:
-                "🪨",
-
-            fiber:
-                "🌿",
-
-            crystal:
-                "💎"
+            potion: "🧪 Potion"
 
         };
 
 
-        return (
-            icons[item] ||
-            "📦"
-        );
+        Object.keys(inventory)
+            .forEach(
+                item => {
 
-    }
-
-
-    // =================================================
-    // FORMAT ITEM
-    // =================================================
-
-    formatItemName(
-        item
-    ) {
-
-        return item
-            .replace(
-                /([A-Z])/g,
-                " $1"
-            )
-            .replace(
-                /^./,
-                character =>
-                    character.toUpperCase()
-            );
-
-    }
+                    const amount =
+                        inventory[item];
 
 
-    // =================================================
-    // PET PANEL
-    // =================================================
-
-    createPetPanel() {
-
-        this.petPanel =
-            document.createElement(
-                "div"
-            );
+                    const slot =
+                        document.createElement(
+                            "div"
+                        );
 
 
-        this.petPanel.id =
-            "pet-panel";
+                    slot.className =
+                        "inventory-slot";
 
 
-        this.petPanel.className =
-            "game-panel hidden";
+                    slot.innerHTML = `
+
+                        <div class="item-icon">
+
+                            ${
+                                item === "wood"
+                                    ? "🪵"
+                                    : item === "stone"
+                                    ? "🪨"
+                                    : item === "fiber"
+                                    ? "🌿"
+                                    : item === "food"
+                                    ? "🍖"
+                                    : item === "captureOrb"
+                                    ? "🔵"
+                                    : item === "potion"
+                                    ? "🧪"
+                                    : "📦"
+                            }
+
+                        </div>
+
+                        <div class="item-name">
+
+                            ${
+                                itemNames[item] ||
+                                item
+                            }
+
+                        </div>
+
+                        <div class="item-count">
+
+                            ${amount}
+
+                        </div>
+
+                    `;
 
 
-        this.petPanel.innerHTML = `
-
-            <div class="panel-header">
-
-                <h2>
-                    🐾 MY PETS
-                </h2>
-
-                <button
-                    id="pet-close"
-                    class="close-button"
-                >
-                    ✕
-                </button>
-
-            </div>
-
-            <div
-                id="pet-content"
-                class="panel-content"
-            ></div>
-
-        `;
-
-
-        this.root.appendChild(
-            this.petPanel
-        );
-
-
-        document
-            .getElementById(
-                "pet-close"
-            )
-            .addEventListener(
-                "click",
-                () => {
-
-                    this.togglePetPanel(
-                        false
+                    container.appendChild(
+                        slot
                     );
 
                 }
@@ -1159,20 +781,16 @@ export class GameUI {
     }
 
 
-    // =================================================
-    // UPDATE PET PANEL
-    // =================================================
+    updatePets() {
 
-    updatePetPanel() {
-
-        const content =
+        const container =
             document.getElementById(
-                "pet-content"
+                "pets-list"
             );
 
 
         if (
-            !content ||
+            !container ||
             !this.game.systems
         ) {
 
@@ -1181,8 +799,7 @@ export class GameUI {
         }
 
 
-        content.innerHTML =
-            "";
+        container.innerHTML = "";
 
 
         const pets =
@@ -1193,16 +810,16 @@ export class GameUI {
             pets.length === 0
         ) {
 
-            content.innerHTML = `
+            container.innerHTML = `
 
                 <div class="empty-message">
 
-                    No pets captured yet.
+                    🐾 No pets captured yet.
 
                     <br><br>
 
-                    Find a wild creature
-                    and use CAPTURE.
+                    Explore the world and
+                    capture your first pet!
 
                 </div>
 
@@ -1214,543 +831,468 @@ export class GameUI {
         }
 
 
-        for (
-            const pet
-            of pets
-        ) {
+        pets.forEach(
+            pet => {
 
-            const card =
-                document.createElement(
-                    "div"
-                );
+                const card =
+                    document.createElement(
+                        "div"
+                    );
 
 
-            card.className =
-                "pet-card";
+                card.className =
+                    "pet-card";
 
 
-            const active =
-                pet.id ===
-                this.game.systems.activePetId;
+                const active =
+                    this.game.systems
+                        .activePetId ===
+                    pet.id;
 
 
-            card.innerHTML = `
+                card.innerHTML = `
 
-                <div class="pet-card-icon">
-                    🐾
-                </div>
+                    <div class="pet-avatar">
 
-                <div class="pet-card-info">
+                        🐾
 
-                    <strong>
-                        ${pet.name}
-                    </strong>
-
-                    <span>
-                        Lv ${pet.level}
-                        • ${pet.rarity}
-                    </span>
-
-                    <span>
-                        ❤️ ${Math.round(pet.health)}
-                        /
-                        ${pet.maxHealth}
-                    </span>
-
-                </div>
-
-                <button
-                    class="pet-select-button"
-                >
-                    ${
-                        active
-                            ? "ACTIVE"
-                            : "USE"
-                    }
-                </button>
-
-            `;
+                    </div>
 
 
-            const selectButton =
-                card.querySelector(
-                    ".pet-select-button"
-                );
+                    <div class="pet-details">
+
+                        <strong>
+
+                            ${this.escapeHTML(
+                                pet.name
+                            )}
+
+                        </strong>
+
+                        <span>
+
+                            ${this.escapeHTML(
+                                pet.rarity
+                            )}
+
+                        </span>
+
+                        <span>
+
+                            Level ${pet.level}
+
+                        </span>
+
+                    </div>
 
 
-            if (
-                active
-            ) {
+                    <button
+                        class="pet-select-button"
+                        data-pet-id="${this.escapeHTML(
+                            pet.id
+                        )}"
+                    >
 
-                selectButton.disabled =
-                    true;
+                        ${
+                            active
+                                ? "ACTIVE"
+                                : "USE"
+                        }
 
-            } else {
+                    </button>
 
-                selectButton.addEventListener(
-                    "click",
-                    () => {
-
-                        this.game.systems
-                            .setActivePet(
-                                pet.id
-                            );
+                `;
 
 
-                        this.updatePetPanel();
-
-                    }
+                container.appendChild(
+                    card
                 );
 
             }
+        );
 
 
-            content.appendChild(
-                card
+        container
+            .querySelectorAll(
+                ".pet-select-button"
+            )
+            .forEach(
+                button => {
+
+                    button.addEventListener(
+                        "click",
+                        () => {
+
+                            const petId =
+                                button.dataset
+                                    .petId;
+
+
+                            this.game.systems
+                                .setActivePet(
+                                    petId
+                                );
+
+
+                            this.updatePets();
+
+                            this.updateActivePet();
+
+                        }
+                    );
+
+                }
             );
+
+    }
+
+
+    updateActivePet() {
+
+        const info =
+            document.getElementById(
+                "active-pet-info"
+            );
+
+
+        const name =
+            document.getElementById(
+                "active-pet-name"
+            );
+
+
+        const health =
+            document.getElementById(
+                "active-pet-health"
+            );
+
+
+        if (
+            !info ||
+            !this.game.systems
+        ) {
+
+            return;
+
+        }
+
+
+        const pet =
+            this.game.systems
+                .getActivePet();
+
+
+        if (
+            !pet
+        ) {
+
+            info.classList.add(
+                "hidden"
+            );
+
+            return;
+
+        }
+
+
+        info.classList.remove(
+            "hidden"
+        );
+
+
+        if (
+            name
+        ) {
+
+            name.textContent =
+                pet.name;
+
+        }
+
+
+        if (
+            health
+        ) {
+
+            const percent =
+                Math.max(
+                    0,
+                    Math.min(
+                        100,
+                        (
+                            pet.health /
+                            Math.max(
+                                1,
+                                pet.maxHealth
+                            )
+                        ) *
+                        100
+                    )
+                );
+
+
+            health.style.width =
+                `${percent}%`;
 
         }
 
     }
 
 
-    // =================================================
-    // PAUSE PANEL
-    // =================================================
+    updateXP() {
 
-    createPausePanel() {
+        if (
+            !this.game.systems
+        ) {
 
-        this.pausePanel =
+            return;
+
+        }
+
+
+        const level =
+            document.getElementById(
+                "ui-level"
+            );
+
+
+        const fill =
+            document.getElementById(
+                "ui-xp-fill"
+            );
+
+
+        if (
+            level
+        ) {
+
+            level.textContent =
+                this.game.systems.level;
+
+        }
+
+
+        if (
+            fill
+        ) {
+
+            const percent =
+                (
+                    this.game.systems.xp /
+                    Math.max(
+                        1,
+                        this.game.systems
+                            .xpToNextLevel
+                    )
+                ) *
+                100;
+
+
+            fill.style.width =
+                `${Math.max(
+                    0,
+                    Math.min(
+                        100,
+                        percent
+                    )
+                )}%`;
+
+        }
+
+    }
+
+
+    updateMap() {
+
+        const marker =
+            document.getElementById(
+                "player-map-marker"
+            );
+
+
+        if (
+            !marker ||
+            !this.game.player
+        ) {
+
+            return;
+
+        }
+
+
+        const position =
+            this.game.player
+                .getPosition();
+
+
+        const worldSize =
+            this.game.world &&
+            this.game.world.size
+                ? this.game.world.size
+                : 500;
+
+
+        const x =
+            (
+                position.x /
+                worldSize
+            ) *
+            100;
+
+
+        const z =
+            (
+                position.z /
+                worldSize
+            ) *
+            100;
+
+
+        marker.style.left =
+            `${50 + x}%`;
+
+
+        marker.style.top =
+            `${50 + z}%`;
+
+    }
+
+
+    notify(
+        message
+    ) {
+
+        if (
+            this.game &&
+            typeof
+            this.game.showNotification ===
+            "function"
+        ) {
+
+            this.game.showNotification(
+                message
+            );
+
+            return;
+
+        }
+
+
+        let container =
+            document.getElementById(
+                "ui-notifications"
+            );
+
+
+        if (
+            !container
+        ) {
+
+            container =
+                document.createElement(
+                    "div"
+                );
+
+            container.id =
+                "ui-notifications";
+
+            document.body.appendChild(
+                container
+            );
+
+        }
+
+
+        const item =
             document.createElement(
                 "div"
             );
 
 
-        this.pausePanel.id =
-            "pause-panel";
+        item.className =
+            "ui-notification";
 
 
-        this.pausePanel.className =
-            "game-panel hidden";
+        item.textContent =
+            message;
 
 
-        this.pausePanel.innerHTML = `
-
-            <div class="pause-content">
-
-                <h1>
-                    PET WORLD
-                </h1>
-
-                <p>
-                    GAME PAUSED
-                </p>
-
-                <button
-                    id="resume-button"
-                    class="large-button"
-                >
-                    ▶ RESUME
-                </button>
-
-                <button
-                    id="save-button"
-                    class="large-button"
-                >
-                    💾 SAVE GAME
-                </button>
-
-            </div>
-
-        `;
-
-
-        this.root.appendChild(
-            this.pausePanel
+        container.appendChild(
+            item
         );
 
 
-        document
-            .getElementById(
-                "resume-button"
-            )
-            .addEventListener(
-                "click",
-                () => {
+        setTimeout(
+            () => {
 
-                    this.togglePause(
-                        false
-                    );
+                item.remove();
 
-                }
-            );
-
-
-        document
-            .getElementById(
-                "save-button"
-            )
-            .addEventListener(
-                "click",
-                () => {
-
-                    if (
-                        this.game.systems
-                    ) {
-
-                        this.game.systems
-                            .saveGame();
-
-                    }
-
-
-                    this.notify(
-                        "Game saved."
-                    );
-
-                }
-            );
+            },
+            2500
+        );
 
     }
 
-
-    // =================================================
-    // TOGGLE INVENTORY
-    // =================================================
-
-    toggleInventory(
-        force
-    ) {
-
-        if (
-            typeof force ===
-            "boolean"
-        ) {
-
-            this.isInventoryOpen =
-                force;
-
-        } else {
-
-            this.isInventoryOpen =
-                !this.isInventoryOpen;
-
-        }
-
-
-        if (
-            this.isInventoryOpen
-        ) {
-
-            this.isPetPanelOpen =
-                false;
-
-            this.updateInventory();
-
-        }
-
-
-        this.inventoryPanel
-            .classList.toggle(
-                "hidden",
-                !this.isInventoryOpen
-            );
-
-
-        this.petPanel
-            .classList.add(
-                "hidden"
-            );
-
-    }
-
-
-    // =================================================
-    // TOGGLE PET
-    // =================================================
-
-    togglePetPanel(
-        force
-    ) {
-
-        if (
-            typeof force ===
-            "boolean"
-        ) {
-
-            this.isPetPanelOpen =
-                force;
-
-        } else {
-
-            this.isPetPanelOpen =
-                !this.isPetPanelOpen;
-
-        }
-
-
-        if (
-            this.isPetPanelOpen
-        ) {
-
-            this.isInventoryOpen =
-                false;
-
-            this.updatePetPanel();
-
-        }
-
-
-        this.petPanel
-            .classList.toggle(
-                "hidden",
-                !this.isPetPanelOpen
-            );
-
-
-        this.inventoryPanel
-            .classList.add(
-                "hidden"
-            );
-
-    }
-
-
-    // =================================================
-    // PAUSE
-    // =================================================
-
-    togglePause(
-        force
-    ) {
-
-        if (
-            typeof force ===
-            "boolean"
-        ) {
-
-            this.isPaused =
-                force;
-
-        } else {
-
-            this.isPaused =
-                !this.isPaused;
-
-        }
-
-
-        this.pausePanel
-            .classList.toggle(
-                "hidden",
-                !this.isPaused
-            );
-
-
-        if (
-            this.game.systems
-        ) {
-
-            if (
-                this.isPaused
-            ) {
-
-                this.game.systems
-                    .pause();
-
-            } else {
-
-                this.game.systems
-                    .resume();
-
-            }
-
-        }
-
-    }
-
-
-    // =================================================
-    // UPDATE STATS
-    // =================================================
-
-    updateStats(
-        systems
-    ) {
-
-        if (
-            !systems
-        ) {
-
-            return;
-
-        }
-
-
-        const player =
-            this.game.player;
-
-
-        if (
-            player
-        ) {
-
-            this.setBar(
-                this.healthFill,
-                player.health,
-                player.maxHealth
-            );
-
-
-            this.setBar(
-                this.staminaFill,
-                player.stamina,
-                player.maxStamina
-            );
-
-
-            this.setBar(
-                this.hungerFill,
-                player.hunger,
-                player.maxHunger
-            );
-
-        }
-
-
-        if (
-            this.levelText
-        ) {
-
-            this.levelText.textContent =
-                `LV ${systems.level}`;
-
-        }
-
-
-        if (
-            this.xpText
-        ) {
-
-            this.xpText.textContent =
-                `XP ${Math.floor(
-                    systems.xp
-                )} / ${systems.xpToNextLevel}`;
-
-        }
-
-
-        const activePet =
-            systems.getActivePet();
-
-
-        if (
-            this.petText
-        ) {
-
-            if (
-                activePet
-            ) {
-
-                this.petText.textContent =
-                    `${activePet.name} • LV ${activePet.level}`;
-
-            } else {
-
-                this.petText.textContent =
-                    "No Pet";
-
-            }
-
-        }
-
-    }
-
-
-    // =================================================
-    // BAR
-    // =================================================
-
-    setBar(
-        element,
-        value,
-        max
-    ) {
-
-        if (
-            !element
-        ) {
-
-            return;
-
-        }
-
-
-        if (
-            !Number.isFinite(
-                value
-            ) ||
-            !Number.isFinite(
-                max
-            ) ||
-            max <= 0
-        ) {
-
-            element.style.width =
-                "0%";
-
-
-            return;
-
-        }
-
-
-        const percent =
-            Math.max(
-                0,
-                Math.min(
-                    100,
-                    (
-                        value /
-                        max
-                    ) *
-                    100
-                )
-            );
-
-
-        element.style.width =
-            `${percent}%`;
-
-    }
-
-
-    // =================================================
-    // UPDATE
-    // =================================================
 
     update(
         delta
     ) {
 
+        this.updateXP();
+
+        this.updateActivePet();
+
         if (
-            this.game.systems
+            this.mapOpen
         ) {
 
-            this.updateStats(
-                this.game.systems
-            );
+            this.updateMap();
+
+        }
+
+
+        if (
+            this.inventoryOpen
+        ) {
+
+            this.updateInventory();
 
         }
 
     }
 
 
-    // =================================================
-    // CSS
-    // =================================================
+    escapeHTML(
+        value
+    ) {
+
+        const element =
+            document.createElement(
+                "div"
+            );
+
+
+        element.textContent =
+            String(value);
+
+
+        return element.innerHTML;
+
+    }
+
 
     injectStyles() {
+
+        if (
+            document.getElementById(
+                "pet-world-ui-style"
+            )
+        ) {
+
+            return;
+
+        }
+
 
         const style =
             document.createElement(
@@ -1758,21 +1300,19 @@ export class GameUI {
             );
 
 
+        style.id =
+            "pet-world-ui-style";
+
+
         style.textContent = `
 
-            * {
-                box-sizing: border-box;
-                -webkit-tap-highlight-color: transparent;
-            }
-
-
-            #game-ui {
+            #pet-world-ui {
 
                 position: fixed;
 
                 inset: 0;
 
-                z-index: 100;
+                z-index: 150;
 
                 pointer-events: none;
 
@@ -1780,450 +1320,6 @@ export class GameUI {
                     Arial,
                     Helvetica,
                     sans-serif;
-
-                color: white;
-
-                user-select: none;
-
-            }
-
-
-            button {
-
-                font-family:
-                    inherit;
-
-            }
-
-
-            .top-hud {
-
-                position: absolute;
-
-                top: 15px;
-
-                left: 15px;
-
-                right: 15px;
-
-                display: flex;
-
-                justify-content:
-                    space-between;
-
-                align-items: flex-start;
-
-                gap: 10px;
-
-            }
-
-
-            .player-stats {
-
-                width:
-                    min(190px, 34vw);
-
-                padding: 10px;
-
-                border-radius: 14px;
-
-                background:
-                    rgba(
-                        0,
-                        0,
-                        0,
-                        0.42
-                    );
-
-                backdrop-filter:
-                    blur(8px);
-
-            }
-
-
-            .stat-row {
-
-                display: flex;
-
-                align-items: center;
-
-                gap: 6px;
-
-                margin-bottom: 6px;
-
-            }
-
-
-            .stat-row:last-child {
-
-                margin-bottom: 0;
-
-            }
-
-
-            .stat-icon {
-
-                width: 18px;
-
-                font-size: 13px;
-
-                text-align: center;
-
-            }
-
-
-            .stat-bar {
-
-                flex: 1;
-
-                height: 7px;
-
-                overflow: hidden;
-
-                border-radius: 20px;
-
-                background:
-                    rgba(
-                        255,
-                        255,
-                        255,
-                        0.16
-                    );
-
-            }
-
-
-            .stat-fill {
-
-                width: 100%;
-
-                height: 100%;
-
-                transition:
-                    width 0.2s linear;
-
-            }
-
-
-            .health-fill {
-
-                background:
-                    #e84c4c;
-
-            }
-
-
-            .stamina-fill {
-
-                background:
-                    #e8c84c;
-
-            }
-
-
-            .hunger-fill {
-
-                background:
-                    #e8934c;
-
-            }
-
-
-            .level-box {
-
-                padding: 10px 14px;
-
-                border-radius: 14px;
-
-                text-align: center;
-
-                background:
-                    rgba(
-                        0,
-                        0,
-                        0,
-                        0.42
-                    );
-
-                backdrop-filter:
-                    blur(8px);
-
-            }
-
-
-            #level-text {
-
-                font-weight: 900;
-
-                font-size: 17px;
-
-            }
-
-
-            #xp-text {
-
-                margin-top: 3px;
-
-                font-size: 10px;
-
-                opacity: 0.7;
-
-            }
-
-
-            .active-pet-box {
-
-                min-width:
-                    125px;
-
-                padding: 9px 12px;
-
-                border-radius: 14px;
-
-                text-align: center;
-
-                background:
-                    rgba(
-                        0,
-                        0,
-                        0,
-                        0.42
-                    );
-
-                backdrop-filter:
-                    blur(8px);
-
-            }
-
-
-            .pet-title {
-
-                font-size: 9px;
-
-                opacity: 0.65;
-
-                letter-spacing: 1px;
-
-            }
-
-
-            #pet-text {
-
-                margin-top: 3px;
-
-                font-size: 12px;
-
-                font-weight: 700;
-
-            }
-
-
-            #crosshair {
-
-                position: absolute;
-
-                left: 50%;
-
-                top: 50%;
-
-                transform:
-                    translate(
-                        -50%,
-                        -50%
-                    );
-
-                font-size: 22px;
-
-                font-weight: 300;
-
-                opacity: 0.8;
-
-                text-shadow:
-                    0 1px 4px
-                    black;
-
-            }
-
-
-            .action-buttons {
-
-                position: absolute;
-
-                right: 18px;
-
-                bottom: 25px;
-
-                display: flex;
-
-                flex-direction: column;
-
-                gap: 9px;
-
-                pointer-events: auto;
-
-            }
-
-
-            .game-button {
-
-                width: 66px;
-
-                height: 58px;
-
-                border: 1px solid
-                    rgba(
-                        255,
-                        255,
-                        255,
-                        0.15
-                    );
-
-                border-radius: 17px;
-
-                background:
-                    rgba(
-                        12,
-                        18,
-                        22,
-                        0.72
-                    );
-
-                color: white;
-
-                box-shadow:
-                    0 5px 18px
-                    rgba(
-                        0,
-                        0,
-                        0,
-                        0.3
-                    );
-
-                display: flex;
-
-                flex-direction: column;
-
-                justify-content:
-                    center;
-
-                align-items: center;
-
-                cursor: pointer;
-
-                touch-action: manipulation;
-
-            }
-
-
-            .game-button:active {
-
-                transform:
-                    scale(0.92);
-
-            }
-
-
-            .button-icon {
-
-                font-size: 21px;
-
-            }
-
-
-            .button-text {
-
-                margin-top: 2px;
-
-                font-size: 7px;
-
-                font-weight: 800;
-
-                letter-spacing: 0.7px;
-
-            }
-
-
-            #mobile-joystick {
-
-                position: absolute;
-
-                left: 20px;
-
-                bottom: 28px;
-
-                pointer-events: auto;
-
-                touch-action: none;
-
-            }
-
-
-            #joystick-base {
-
-                width: 130px;
-
-                height: 130px;
-
-                border-radius: 50%;
-
-                background:
-                    rgba(
-                        255,
-                        255,
-                        255,
-                        0.08
-                    );
-
-                border: 2px solid
-                    rgba(
-                        255,
-                        255,
-                        255,
-                        0.18
-                    );
-
-                position: relative;
-
-                touch-action: none;
-
-            }
-
-
-            #joystick-stick {
-
-                position: absolute;
-
-                left: 50%;
-
-                top: 50%;
-
-                width: 58px;
-
-                height: 58px;
-
-                margin-left: -29px;
-
-                margin-top: -29px;
-
-                border-radius: 50%;
-
-                background:
-                    rgba(
-                        255,
-                        255,
-                        255,
-                        0.24
-                    );
-
-                border: 2px solid
-                    rgba(
-                        255,
-                        255,
-                        255,
-                        0.35
-                    );
-
-                pointer-events: none;
 
             }
 
@@ -2236,9 +1332,15 @@ export class GameUI {
 
                 top: 50%;
 
+                transform:
+                    translate(
+                        -50%,
+                        -50%
+                    );
+
                 width:
                     min(
-                        430px,
+                        520px,
                         90vw
                     );
 
@@ -2247,25 +1349,20 @@ export class GameUI {
 
                 overflow-y: auto;
 
-                transform:
-                    translate(
-                        -50%,
-                        -50%
-                    );
-
-                border-radius: 22px;
-
                 padding: 18px;
+
+                border-radius: 18px;
 
                 background:
                     rgba(
-                        12,
-                        18,
-                        22,
+                        7,
+                        14,
+                        19,
                         0.94
                     );
 
-                border: 1px solid
+                border:
+                    1px solid
                     rgba(
                         255,
                         255,
@@ -2274,13 +1371,15 @@ export class GameUI {
                     );
 
                 box-shadow:
-                    0 20px 70px
+                    0 25px 70px
                     rgba(
                         0,
                         0,
                         0,
-                        0.6
+                        0.55
                     );
+
+                color: white;
 
                 pointer-events: auto;
 
@@ -2303,93 +1402,64 @@ export class GameUI {
 
                 align-items: center;
 
-                margin-bottom: 14px;
+                margin-bottom: 16px;
 
-            }
+                font-weight: 800;
 
-
-            .panel-header h2 {
-
-                margin: 0;
-
-                font-size: 19px;
+                letter-spacing: 1px;
 
             }
 
 
             .close-button {
 
-                width: 35px;
+                width: 32px;
 
-                height: 35px;
+                height: 32px;
 
                 border: 0;
 
-                border-radius: 10px;
+                border-radius: 50%;
 
                 background:
                     rgba(
                         255,
                         255,
                         255,
-                        0.08
+                        0.12
                     );
 
                 color: white;
 
-                font-size: 17px;
+                font-size: 22px;
 
                 cursor: pointer;
 
             }
 
 
-            .panel-content {
+            .inventory-grid {
 
-                display: flex;
+                display: grid;
 
-                flex-direction: column;
-
-                gap: 8px;
-
-            }
-
-
-            .inventory-item {
-
-                display: flex;
-
-                justify-content:
-                    space-between;
-
-                align-items: center;
-
-                padding: 13px;
-
-                border-radius: 12px;
-
-                background:
-                    rgba(
-                        255,
-                        255,
-                        255,
-                        0.06
+                grid-template-columns:
+                    repeat(
+                        3,
+                        1fr
                     );
-
-                font-size: 14px;
-
-            }
-
-
-            .pet-card {
-
-                display: flex;
-
-                align-items: center;
 
                 gap: 10px;
 
-                padding: 10px;
+            }
+
+
+            .inventory-slot {
+
+                position: relative;
+
+                min-height: 110px;
+
+                padding: 12px;
 
                 border-radius: 14px;
 
@@ -2401,14 +1471,90 @@ export class GameUI {
                         0.06
                     );
 
+                border:
+                    1px solid
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.08
+                    );
+
+                text-align: center;
+
             }
 
 
-            .pet-card-icon {
+            .item-icon {
 
-                width: 45px;
+                font-size: 34px;
 
-                height: 45px;
+            }
+
+
+            .item-name {
+
+                margin-top: 6px;
+
+                font-size: 11px;
+
+                opacity: 0.75;
+
+            }
+
+
+            .item-count {
+
+                position: absolute;
+
+                top: 7px;
+
+                right: 8px;
+
+                font-weight: 800;
+
+            }
+
+
+            .pets-list {
+
+                display: flex;
+
+                flex-direction: column;
+
+                gap: 9px;
+
+            }
+
+
+            .pet-card {
+
+                display: flex;
+
+                align-items: center;
+
+                gap: 12px;
+
+                padding: 11px;
+
+                border-radius: 13px;
+
+                background:
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.06
+                    );
+
+            }
+
+
+            .pet-avatar {
+
+                width: 48px;
+
+                height: 48px;
 
                 display: flex;
 
@@ -2426,36 +1572,29 @@ export class GameUI {
                         0.08
                     );
 
-                font-size: 25px;
+                font-size: 27px;
 
             }
 
 
-            .pet-card-info {
-
-                flex: 1;
+            .pet-details {
 
                 display: flex;
 
                 flex-direction: column;
+
+                flex: 1;
 
                 gap: 2px;
 
             }
 
 
-            .pet-card-info strong {
+            .pet-details span {
 
-                font-size: 14px;
+                font-size: 11px;
 
-            }
-
-
-            .pet-card-info span {
-
-                font-size: 10px;
-
-                opacity: 0.65;
+                opacity: 0.6;
 
             }
 
@@ -2464,191 +1603,359 @@ export class GameUI {
 
                 border: 0;
 
-                border-radius: 10px;
+                border-radius: 9px;
 
-                padding: 9px 10px;
+                padding: 8px 10px;
 
-                background:
-                    rgba(
-                        93,
-                        183,
-                        108,
-                        0.8
-                    );
+                background: white;
 
-                color: white;
-
-                font-size: 9px;
+                color: #111;
 
                 font-weight: 800;
+
+                font-size: 10px;
 
                 cursor: pointer;
 
             }
 
 
-            .pet-select-button:disabled {
-
-                opacity: 0.45;
-
-                cursor: default;
-
-            }
-
-
             .empty-message {
-
-                text-align: center;
 
                 padding: 30px 10px;
 
-                opacity: 0.65;
+                text-align: center;
 
-                font-size: 13px;
+                color:
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.6
+                    );
+
+                line-height: 1.5;
 
             }
 
 
-            #notification-box {
+            .map-panel {
+
+                width:
+                    min(
+                        600px,
+                        92vw
+                    );
+
+            }
+
+
+            .world-map {
+
+                position: relative;
+
+                width: 100%;
+
+                aspect-ratio: 1 / 1;
+
+                overflow: hidden;
+
+                border-radius: 14px;
+
+                background:
+                    radial-gradient(
+                        circle,
+                        #36553c,
+                        #172a25
+                    );
+
+                border:
+                    2px solid
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.12
+                    );
+
+            }
+
+
+            .world-map::before {
+
+                content: "";
+
+                position: absolute;
+
+                inset: 0;
+
+                background-image:
+                    linear-gradient(
+                        rgba(
+                            255,
+                            255,
+                            255,
+                            0.05
+                        ) 1px,
+                        transparent 1px
+                    ),
+                    linear-gradient(
+                        90deg,
+                        rgba(
+                            255,
+                            255,
+                            255,
+                            0.05
+                        ) 1px,
+                        transparent 1px
+                    );
+
+                background-size:
+                    10% 10%;
+
+            }
+
+
+            .player-map-marker {
+
+                position: absolute;
+
+                transform:
+                    translate(
+                        -50%,
+                        -50%
+                    );
+
+                color: white;
+
+                font-size: 25px;
+
+                text-shadow:
+                    0 0 10px
+                    black;
+
+            }
+
+
+            .floating-button {
+
+                position: absolute;
+
+                bottom: 210px;
+
+                width: 48px;
+
+                height: 48px;
+
+                border-radius: 50%;
+
+                border:
+                    1px solid
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.15
+                    );
+
+                background:
+                    rgba(
+                        8,
+                        15,
+                        20,
+                        0.72
+                    );
+
+                color: white;
+
+                font-size: 20px;
+
+                pointer-events: auto;
+
+                cursor: pointer;
+
+            }
+
+
+            .inventory-button {
+
+                right: 15px;
+
+                display: none;
+
+            }
+
+
+            .pet-button {
+
+                right: 15px;
+
+                bottom: 265px;
+
+            }
+
+
+            .active-pet-info {
 
                 position: absolute;
 
                 left: 50%;
 
-                top: 18%;
+                top: 15px;
 
                 transform:
                     translateX(-50%);
 
-                display: flex;
+                width: 170px;
 
-                flex-direction: column;
-
-                align-items: center;
-
-                gap: 6px;
-
-                width:
-                    min(
-                        90vw,
-                        400px
-                    );
-
-            }
-
-
-            .notification {
-
-                padding: 10px 16px;
+                padding: 8px;
 
                 border-radius: 12px;
 
                 background:
                     rgba(
-                        0,
-                        0,
-                        0,
-                        0.75
+                        5,
+                        12,
+                        16,
+                        0.7
                     );
-
-                backdrop-filter:
-                    blur(8px);
-
-                font-size: 12px;
-
-                animation:
-                    notificationIn
-                    0.25s ease;
-
-            }
-
-
-            .notification.hide {
-
-                opacity: 0;
-
-                transform:
-                    translateY(
-                        -8px
-                    );
-
-                transition:
-                    all 0.3s ease;
-
-            }
-
-
-            @keyframes notificationIn {
-
-                from {
-
-                    opacity: 0;
-
-                    transform:
-                        translateY(
-                            -10px
-                        );
-
-                }
-
-                to {
-
-                    opacity: 1;
-
-                    transform:
-                        translateY(0);
-
-                }
-
-            }
-
-
-            .pause-content {
 
                 text-align: center;
 
-                padding: 20px;
+                color: white;
 
             }
 
 
-            .pause-content h1 {
-
-                margin: 0;
-
-                font-size: 30px;
-
-                letter-spacing: 3px;
-
-            }
-
-
-            .pause-content p {
-
-                opacity: 0.6;
+            .active-pet-name {
 
                 font-size: 12px;
 
-                letter-spacing: 2px;
+                font-weight: 800;
 
-                margin-bottom: 25px;
+                margin-bottom: 5px;
 
             }
 
 
-            .large-button {
-
-                display: block;
+            .pet-health-bar {
 
                 width: 100%;
 
-                padding: 14px;
+                height: 6px;
 
-                margin-top: 10px;
+                border-radius: 10px;
+
+                overflow: hidden;
+
+                background:
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.15
+                    );
+
+            }
+
+
+            #active-pet-health {
+
+                width: 100%;
+
+                height: 100%;
+
+                background: #61b56f;
+
+            }
+
+
+            .xp-container {
+
+                position: absolute;
+
+                left: 50%;
+
+                bottom: 12px;
+
+                transform:
+                    translateX(-50%);
+
+                width:
+                    min(
+                        300px,
+                        45vw
+                    );
+
+                pointer-events: none;
+
+            }
+
+
+            .xp-label {
+
+                display: flex;
+
+                justify-content:
+                    space-between;
+
+                color: white;
+
+                font-size: 10px;
+
+                margin-bottom: 4px;
+
+            }
+
+
+            .xp-bar {
+
+                height: 6px;
+
+                border-radius: 10px;
+
+                overflow: hidden;
+
+                background:
+                    rgba(
+                        255,
+                        255,
+                        255,
+                        0.15
+                    );
+
+            }
+
+
+            #ui-xp-fill {
+
+                width: 0%;
+
+                height: 100%;
+
+                background: white;
+
+            }
+
+
+            .settings-content {
+
+                display: flex;
+
+                flex-direction: column;
+
+                gap: 10px;
+
+            }
+
+
+            .settings-button {
+
+                padding: 13px;
 
                 border: 0;
 
-                border-radius: 12px;
+                border-radius: 11px;
 
                 background:
                     rgba(
@@ -2667,80 +1974,110 @@ export class GameUI {
             }
 
 
+            .settings-button.danger {
+
+                background:
+                    rgba(
+                        170,
+                        50,
+                        50,
+                        0.5
+                    );
+
+            }
+
+
+            #ui-notifications {
+
+                position: fixed;
+
+                top: 80px;
+
+                left: 50%;
+
+                transform:
+                    translateX(-50%);
+
+                display: flex;
+
+                flex-direction: column;
+
+                gap: 7px;
+
+                z-index: 9999;
+
+                pointer-events: none;
+
+            }
+
+
+            .ui-notification {
+
+                padding:
+                    9px 16px;
+
+                border-radius: 20px;
+
+                background:
+                    rgba(
+                        5,
+                        12,
+                        16,
+                        0.85
+                    );
+
+                color: white;
+
+                font-size: 12px;
+
+            }
+
+
             @media (
                 max-width: 600px
             ) {
 
-                .top-hud {
+                .game-panel {
 
-                    top: 8px;
+                    width: 92vw;
 
-                    left: 8px;
+                    max-height: 78vh;
 
-                    right: 8px;
-
-                }
-
-
-                .player-stats {
-
-                    width: 145px;
-
-                    padding: 7px;
+                    padding: 14px;
 
                 }
 
 
-                .level-box {
+                .inventory-grid {
 
-                    padding: 7px 9px;
-
-                }
-
-
-                .active-pet-box {
-
-                    min-width: 90px;
-
-                    padding: 7px;
+                    grid-template-columns:
+                        repeat(
+                            2,
+                            1fr
+                        );
 
                 }
 
 
-                .game-button {
+                .pet-button {
 
-                    width: 58px;
-
-                    height: 53px;
+                    bottom: 220px;
 
                 }
 
 
-                .action-buttons {
+                .xp-container {
 
-                    right: 9px;
+                    bottom: 8px;
 
-                    bottom: 15px;
-
-                    gap: 6px;
+                    width: 42vw;
 
                 }
 
 
-                #mobile-joystick {
+                .active-pet-info {
 
-                    left: 10px;
-
-                    bottom: 15px;
-
-                }
-
-
-                #joystick-base {
-
-                    width: 115px;
-
-                    height: 115px;
+                    top: 75px;
 
                 }
 
