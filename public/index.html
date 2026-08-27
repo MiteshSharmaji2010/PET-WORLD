@@ -12,7 +12,7 @@
 
     <meta
         name="theme-color"
-        content="#081018"
+        content="#101820"
     >
 
     <title>PET WORLD</title>
@@ -26,13 +26,13 @@
 
 <body>
 
-    <!-- =================================================
-         GAME LOADING
-    ================================================== -->
+    <!-- ========================================= -->
+    <!-- LOADING SCREEN -->
+    <!-- ========================================= -->
 
     <div id="loading-screen">
 
-        <div class="loading-box">
+        <div class="loading-content">
 
             <div class="loading-logo">
                 🐾
@@ -43,7 +43,7 @@
             </h1>
 
             <p>
-                Loading your world...
+                Explore • Survive • Capture • Grow
             </p>
 
             <div class="loading-bar">
@@ -54,80 +54,37 @@
 
             </div>
 
-            <span id="loading-status">
-                Starting...
-            </span>
+            <div id="loading-text">
+                Loading world...
+            </div>
 
         </div>
 
     </div>
 
 
-    <!-- =================================================
-         GAME ERROR
-    ================================================== -->
+    <!-- ========================================= -->
+    <!-- GAME HUD -->
+    <!-- ========================================= -->
 
-    <div
-        id="game-error"
-        class="hidden"
-    >
+    <div id="game-hud">
 
-        <div class="error-box">
+        <div
+            id="top-left-hud"
+            class="hud-panel"
+        >
 
-            <h2>
-                ⚠️ GAME ERROR
-            </h2>
-
-            <p id="game-error-message">
-                Game failed to start.
-            </p>
-
-            <button
-                onclick="location.reload()"
-            >
-                RELOAD GAME
-            </button>
-
-        </div>
-
-    </div>
-
-
-    <!-- =================================================
-         GAME UI ROOT
-    ================================================== -->
-
-    <div id="game-ui">
-
-        <!-- TOP BAR -->
-
-        <div class="top-bar">
-
-            <div class="game-title">
-                🐾 PET WORLD
+            <div class="player-name">
+                PLAYER
             </div>
 
-            <div
-                id="connection-status"
-                class="connection-status offline"
-            >
-                OFFLINE
-            </div>
-
-        </div>
-
-
-        <!-- PLAYER STATS -->
-
-        <div class="player-stats">
-
-            <div class="stat-box">
+            <div class="health-container">
 
                 <span>
                     ❤️
                 </span>
 
-                <div class="stat-bar">
+                <div class="hud-bar">
 
                     <div
                         id="health-fill"
@@ -136,42 +93,19 @@
 
                 </div>
 
-                <strong id="health-value">
-                    100
-                </strong>
-
-            </div>
-
-
-            <div class="stat-box">
-
-                <span>
-                    🍖
+                <span id="health-text">
+                    100/100
                 </span>
 
-                <div class="stat-bar">
-
-                    <div
-                        id="hunger-fill"
-                        class="hunger-fill"
-                    ></div>
-
-                </div>
-
-                <strong id="hunger-value">
-                    100
-                </strong>
-
             </div>
 
-
-            <div class="stat-box">
+            <div class="stamina-container">
 
                 <span>
                     ⚡
                 </span>
 
-                <div class="stat-bar">
+                <div class="hud-bar">
 
                     <div
                         id="stamina-fill"
@@ -180,89 +114,158 @@
 
                 </div>
 
-                <strong id="stamina-value">
-                    100
-                </strong>
+            </div>
+
+            <div class="hunger-container">
+
+                <span>
+                    🍖
+                </span>
+
+                <div class="hud-bar">
+
+                    <div
+                        id="hunger-fill"
+                        class="hunger-fill"
+                    ></div>
+
+                </div>
 
             </div>
 
         </div>
 
 
+        <!-- ===================================== -->
         <!-- CROSSHAIR -->
+        <!-- ===================================== -->
 
-        <div
-            id="crosshair"
-            class="crosshair"
-        >
+        <div id="crosshair">
             +
         </div>
 
 
-        <!-- HELP -->
+        <!-- ===================================== -->
+        <!-- INTERACTION -->
+        <!-- ===================================== -->
 
-        <div class="controls-help">
+        <div
+            id="interaction-message"
+            class="hidden"
+        >
+            Press E to interact
+        </div>
 
-            <span>
-                W A S D
-            </span>
 
-            Move
+        <!-- ===================================== -->
+        <!-- BOTTOM ACTIONS -->
+        <!-- ===================================== -->
 
-            <span>
-                SHIFT
-            </span>
+        <div id="action-buttons">
 
-            Run
+            <button
+                id="inventory-button"
+                class="action-button"
+            >
+                🎒
+                <span>
+                    Inventory
+                </span>
+            </button>
 
-            <span>
-                SPACE
-            </span>
+            <button
+                id="map-button"
+                class="action-button"
+            >
+                🗺️
+                <span>
+                    Map
+                </span>
+            </button>
 
-            Jump
+            <button
+                id="pets-button"
+                class="action-button"
+            >
+                🐾
+                <span>
+                    Pets
+                </span>
+            </button>
 
-            <span>
-                E
-            </span>
-
-            Capture
-
-            <span>
-                F
-            </span>
-
-            Eat
+            <button
+                id="settings-button"
+                class="action-button"
+            >
+                ⚙️
+                <span>
+                    Settings
+                </span>
+            </button>
 
         </div>
 
 
-        <!-- NOTIFICATIONS -->
+        <!-- ===================================== -->
+        <!-- COMBAT -->
+        <!-- ===================================== -->
 
-        <div
-            id="ui-notifications"
-        ></div>
+        <div id="combat-controls">
 
+            <button
+                id="attack-button"
+                class="combat-button attack"
+            >
+                ⚔️
+            </button>
 
-        <!-- MULTIPLAYER PLAYER COUNT -->
+            <button
+                id="capture-button"
+                class="combat-button capture"
+            >
+                🔵
+            </button>
 
-        <div
-            id="online-count"
-            class="online-count"
-        >
-            🟢 1 Player
+            <button
+                id="eat-button"
+                class="combat-button eat"
+            >
+                🍖
+            </button>
+
         </div>
 
     </div>
 
 
+    <!-- ========================================= -->
+    <!-- GAME CONTAINER -->
+    <!-- ========================================= -->
+
+    <main id="game-container"></main>
+
+
+    <!-- ========================================= -->
+    <!-- NOTIFICATIONS -->
+    <!-- ========================================= -->
+
+    <div
+        id="ui-notifications"
+    ></div>
+
+
+    <!-- ========================================= -->
     <!-- SOCKET.IO -->
+    <!-- ========================================= -->
 
     <script
         src="/socket.io/socket.io.js"
     ></script>
 
 
-    <!-- GAME -->
+    <!-- ========================================= -->
+    <!-- MAIN GAME -->
+    <!-- ========================================= -->
 
     <script
         type="module"
