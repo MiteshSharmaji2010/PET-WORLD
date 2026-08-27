@@ -1,173 +1,84 @@
-"use strict";
+```js
+import express from "express";
+import http from "http";
+import path from "path";
+import { fileURLToPath } from "url";
 
-/*
-=========================================================
-PET WORLD
-Render-ready Node.js + Express Server
-File: server.js
-=========================================================
-*/
-
-const express = require("express");
-const path = require("path");
-const compression = require("compression");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
+const server = http.createServer(app);
 
-/*
-=========================================================
-CONFIGURATION
-=========================================================
-*/
+// =====================================================
+// CONFIGURATION
+// =====================================================
 
-const PORT = Number(process.env.PORT) || 10000;
+const PORT = process.env.PORT || 10000;
 
-const HOST =
-    process.env.HOST ||
-    "0.0.0.0";
+const PUBLIC_DIR = path.join(
+    __dirname,
+    "public"
+);
 
-const IS_PRODUCTION =
-    process.env.NODE_ENV === "production";
-
-const PUBLIC_DIR =
-    path.join(
-        __dirname,
-        "public"
-    );
-
-/*
-=========================================================
-EXPRESS CONFIGURATION
-=========================================================
-*/
+// =====================================================
+// BASIC MIDDLEWARE
+// =====================================================
 
 app.disable("x-powered-by");
 
-app.set(
-    "trust proxy",
-    1
-);
-
 app.use(
     express.json({
-        limit: "1mb"
+        limit: "2mb"
     })
 );
 
 app.use(
     express.urlencoded({
         extended: true,
-        limit: "1mb"
+        limit: "2mb"
     })
 );
 
-/*
-=========================================================
-COMPRESSION
-=========================================================
-*/
-
-app.use(
-    compression({
-        threshold: 1024
-    })
-);
-
-/*
-=========================================================
-SECURITY HEADERS
-=========================================================
-*/
-
-app.use(
-    (req, res, next) => {
-
-        res.setHeader(
-            "X-Content-Type-Options",
-            "nosniff"
-        );
-
-        res.setHeader(
-            "X-Frame-Options",
-            "SAMEORIGIN"
-        );
-
-        res.setHeader(
-            "Referrer-Policy",
-            "strict-origin-when-cross-origin"
-        );
-
-        res.setHeader(
-            "Permissions-Policy",
-            "camera=(), microphone=(), geolocation=()"
-        );
-
-        next();
-
-    }
-);
-
-/*
-=========================================================
-REQUEST LOGGER
-=========================================================
-*/
-
-app.use(
-    (req, res, next) => {
-
-        const start =
-            Date.now();
-
-        res.on(
-            "finish",
-            () => {
-
-                const duration =
-                    Date.now() -
-                    start;
-
-                console.log(
-                    `${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`
-                );
-
-            }
-        );
-
-        next();
-
-    }
-);
-
-/*
-=========================================================
-HEALTH CHECK
-=========================================================
-*/
+// =====================================================
+// HEALTH CHECK
+// =====================================================
 
 app.get(
     "/health",
     (req, res) => {
 
         res.status(200).json({
+            success: true,
+            game: "PET WORLD",
+            status: "online",
+            timestamp: new Date().toISOString()
+        });
+
+    }
+);
+
+// =====================================================
+// GAME STATUS
+// =====================================================
+
+app.get(
+    "/api/status",
+    (req, res) => {
+
+        res.status(200).json({
 
             success: true,
 
-            status: "healthy",
+            game: "PET WORLD",
 
-            service: "PET WORLD",
+            server: "online",
 
-            environment:
-                IS_PRODUCTION
-                    ? "production"
-                    : "development",
+            multiplayer: false,
 
-            uptime:
-                Math.floor(
-                    process.uptime()
-                ),
+            version: "1.0.0",
 
-            timestamp:
+            time:
                 new Date().toISOString()
 
         });
@@ -175,77 +86,9 @@ app.get(
     }
 );
 
-/*
-=========================================================
-API STATUS
-=========================================================
-*/
-
-app.get(
-    "/api",
-    (req, res) => {
-
-        res.status(200).json({
-
-            success: true,
-
-            game:
-                "PET WORLD",
-
-            message:
-                "PET WORLD server is running.",
-
-            version:
-                "1.0.0"
-
-        });
-
-    }
-);
-
-/*
-=========================================================
-GAME CONFIG API
-=========================================================
-*/
-
-app.get(
-    "/api/config",
-    (req, res) => {
-
-        res.status(200).json({
-
-            success: true,
-
-            game: {
-
-                name:
-                    "PET WORLD",
-
-                version:
-                    "1.0.0",
-
-                maxPlayers:
-                    100,
-
-                worldSize:
-                    500,
-
-                multiplayer:
-                    false
-
-            }
-
-        });
-
-    }
-);
-
-/*
-=========================================================
-STATIC FILES
-=========================================================
-*/
+// =====================================================
+// STATIC GAME FILES
+// =====================================================
 
 app.use(
     express.static(
@@ -256,153 +99,66 @@ app.use(
             ],
 
             maxAge:
-                IS_PRODUCTION
-                    ? "1d"
-                    : 0,
-
-            index:
-                "index.html",
-
-            redirect:
-                false
+                process.env.NODE_ENV === "production"
+                    ? "1h"
+                    : 0
         }
     )
 );
 
-/*
-=========================================================
-FAVICON
-=========================================================
-*/
+// =====================================================
+// INDEX ROUTE
+// =====================================================
 
 app.get(
-    "/favicon.ico",
+    "/",
     (req, res) => {
-
-        const favicon =
-            path.join(
-                PUBLIC_DIR,
-                "favicon.ico"
-            );
 
         res.sendFile(
-            favicon,
-            error => {
-
-                if (error) {
-
-                    res.status(
-                        204
-                    ).end();
-
-                }
-
-            }
+            path.join(
+                PUBLIC_DIR,
+                "index.html"
+            )
         );
 
     }
 );
 
-/*
-=========================================================
-ROBOTS
-=========================================================
-*/
+// =====================================================
+// SPA / GAME FALLBACK
+//
+// IMPORTANT:
+// Do NOT use:
+// app.get("*", ...)
+//
+// New Express versions reject that syntax.
+// =====================================================
 
 app.get(
-    "/robots.txt",
-    (req, res) => {
-
-        res.type(
-            "text/plain"
-        );
-
-        res.send(
-            "User-agent: *\nAllow: /\n"
-        );
-
-    }
-);
-
-/*
-=========================================================
-SPA FALLBACK
-=========================================================
-
-If a browser opens a route that does not directly
-exist, send index.html.
-
-This is useful for client-side game/menu routes.
-=========================================================
-*/
-
-app.get(
-    "*",
+    "/{*splat}",
     (req, res, next) => {
 
-        /*
-        Do not return index.html for API routes.
-        */
+        // API requests that were not found
+        // should return JSON instead of index.html.
 
         if (
-            req.path.startsWith(
-                "/api/"
-            )
+            req.path.startsWith("/api/")
         ) {
 
-            return next();
+            return res.status(404).json({
+
+                success: false,
+
+                error: "API endpoint not found",
+
+                path: req.path
+
+            });
 
         }
 
-        /*
-        Do not return index.html for
-        common missing asset requests.
-        */
-
-        const assetExtensions = [
-
-            ".js",
-            ".mjs",
-            ".css",
-            ".json",
-            ".png",
-            ".jpg",
-            ".jpeg",
-            ".webp",
-            ".gif",
-            ".svg",
-            ".ico",
-            ".mp3",
-            ".wav",
-            ".ogg",
-            ".mp4",
-            ".webm",
-            ".glb",
-            ".gltf",
-            ".bin",
-            ".woff",
-            ".woff2",
-            ".ttf"
-
-        ];
-
-        const hasAssetExtension =
-            assetExtensions.some(
-                extension =>
-                    req.path
-                        .toLowerCase()
-                        .endsWith(
-                            extension
-                        )
-            );
-
-        if (
-            hasAssetExtension
-        ) {
-
-            return next();
-
-        }
+        // Browser/game routes
+        // return the main game page.
 
         res.sendFile(
             path.join(
@@ -423,35 +179,131 @@ app.get(
     }
 );
 
-/*
-=========================================================
-404 HANDLER
-=========================================================
-*/
+// =====================================================
+// 404 HANDLER
+// =====================================================
 
 app.use(
     (req, res) => {
+
+        if (
+            req.accepts("html")
+        ) {
+
+            return res.status(404).send(
+                `
+                <!DOCTYPE html>
+
+                <html lang="en">
+
+                <head>
+
+                    <meta charset="UTF-8">
+
+                    <meta
+                        name="viewport"
+                        content="width=device-width, initial-scale=1.0"
+                    >
+
+                    <title>PET WORLD - 404</title>
+
+                    <style>
+
+                        * {
+                            box-sizing: border-box;
+                        }
+
+                        body {
+                            margin: 0;
+                            min-height: 100vh;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            background: #071016;
+                            color: white;
+                            font-family:
+                                Arial,
+                                Helvetica,
+                                sans-serif;
+                            text-align: center;
+                        }
+
+                        .box {
+                            width: min(500px, 90vw);
+                            padding: 40px;
+                            border-radius: 20px;
+                            background:
+                                rgba(
+                                    255,
+                                    255,
+                                    255,
+                                    0.06
+                                );
+                            border:
+                                1px solid
+                                rgba(
+                                    255,
+                                    255,
+                                    255,
+                                    0.12
+                                );
+                        }
+
+                        h1 {
+                            margin-top: 0;
+                        }
+
+                        p {
+                            opacity: 0.7;
+                        }
+
+                    </style>
+
+                </head>
+
+                <body>
+
+                    <div class="box">
+
+                        <h1>
+                            🌍 PET WORLD
+                        </h1>
+
+                        <h2>
+                            404
+                        </h2>
+
+                        <p>
+                            The requested page
+                            was not found.
+                        </p>
+
+                    </div>
+
+                </body>
+
+                </html>
+                `
+            );
+
+        }
 
         res.status(404).json({
 
             success: false,
 
-            error:
-                "Not Found",
+            error: "Not found",
 
-            path:
-                req.originalUrl
+            path: req.path
 
         });
 
     }
 );
 
-/*
-=========================================================
-ERROR HANDLER
-=========================================================
-*/
+// =====================================================
+// GLOBAL ERROR HANDLER
+// =====================================================
 
 app.use(
     (
@@ -462,7 +314,7 @@ app.use(
     ) => {
 
         console.error(
-            "SERVER ERROR:",
+            "Server error:",
             error
         );
 
@@ -470,142 +322,83 @@ app.use(
             res.headersSent
         ) {
 
-            return next(
-                error
-            );
+            return next(error);
 
         }
 
-        const statusCode =
-            Number(
-                error.status
-            ) >= 400 &&
-            Number(
-                error.status
-            ) < 600
-                ? Number(
-                    error.status
-                )
-                : 500;
-
-        res.status(
-            statusCode
-        ).json({
+        res.status(500).json({
 
             success: false,
 
             error:
-                IS_PRODUCTION
-                    ? "Internal server error"
-                    : error.message
+                "Internal server error"
 
         });
 
     }
 );
 
-/*
-=========================================================
-START SERVER
-=========================================================
-*/
+// =====================================================
+// START SERVER
+// =====================================================
 
-const server =
-    app.listen(
-        PORT,
-        HOST,
-        () => {
+server.listen(
+    PORT,
+    "0.0.0.0",
+    () => {
 
-            console.log(
-                "================================================="
-            );
+        console.log(
+            "========================================"
+        );
 
-            console.log(
-                "              PET WORLD SERVER"
-            );
+        console.log(
+            "        PET WORLD SERVER"
+        );
 
-            console.log(
-                "================================================="
-            );
+        console.log(
+            "========================================"
+        );
 
-            console.log(
-                `Environment : ${
-                    IS_PRODUCTION
-                        ? "production"
-                        : "development"
-                }`
-            );
+        console.log(
+            `Server running on port ${PORT}`
+        );
 
-            console.log(
-                `Host        : ${HOST}`
-            );
+        console.log(
+            `Environment: ${
+                process.env.NODE_ENV ||
+                "development"
+            }`
+        );
 
-            console.log(
-                `Port        : ${PORT}`
-            );
+        console.log(
+            `Public directory: ${PUBLIC_DIR}`
+        );
 
-            console.log(
-                `Public      : ${PUBLIC_DIR}`
-            );
+        console.log(
+            "Health: /health"
+        );
 
-            console.log(
-                "Status      : ONLINE"
-            );
+        console.log(
+            "API Status: /api/status"
+        );
 
-            console.log(
-                "================================================="
-            );
-
-        }
-    );
-
-/*
-=========================================================
-SERVER ERROR
-=========================================================
-*/
-
-server.on(
-    "error",
-    error => {
-
-        if (
-            error.code ===
-            "EADDRINUSE"
-        ) {
-
-            console.error(
-                `Port ${PORT} is already in use.`
-            );
-
-        } else {
-
-            console.error(
-                "HTTP server error:",
-                error
-            );
-
-        }
-
-        process.exit(
-            1
+        console.log(
+            "========================================"
         );
 
     }
 );
 
-/*
-=========================================================
-GRACEFUL SHUTDOWN
-=========================================================
-*/
+// =====================================================
+// GRACEFUL SHUTDOWN
+// =====================================================
 
 function shutdown(
     signal
 ) {
 
     console.log(
-        `${signal} received. Shutting down...`
+        `${signal} received.`
     );
 
     server.close(
@@ -618,9 +411,7 @@ function shutdown(
                     error
                 );
 
-                process.exit(
-                    1
-                );
+                process.exit(1);
 
             }
 
@@ -628,32 +419,10 @@ function shutdown(
                 "PET WORLD server stopped."
             );
 
-            process.exit(
-                0
-            );
+            process.exit(0);
 
         }
     );
-
-    /*
-    Force shutdown after 10 seconds
-    if something refuses to close.
-    */
-
-    setTimeout(
-        () => {
-
-            console.error(
-                "Forced shutdown."
-            );
-
-            process.exit(
-                1
-            );
-
-        },
-        10000
-    ).unref();
 
 }
 
@@ -661,9 +430,7 @@ process.on(
     "SIGTERM",
     () => {
 
-        shutdown(
-            "SIGTERM"
-        );
+        shutdown("SIGTERM");
 
     }
 );
@@ -672,45 +439,8 @@ process.on(
     "SIGINT",
     () => {
 
-        shutdown(
-            "SIGINT"
-        );
+        shutdown("SIGINT");
 
     }
 );
-
-/*
-=========================================================
-UNHANDLED ERRORS
-=========================================================
-*/
-
-process.on(
-    "uncaughtException",
-    error => {
-
-        console.error(
-            "UNCAUGHT EXCEPTION:",
-            error
-        );
-
-    }
-);
-
-process.on(
-    "unhandledRejection",
-    reason => {
-
-        console.error(
-            "UNHANDLED REJECTION:",
-            reason
-        );
-
-    }
-);
-
-/*
-=========================================================
-END SERVER
-=========================================================
-*/
+```
