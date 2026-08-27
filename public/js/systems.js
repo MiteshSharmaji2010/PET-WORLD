@@ -1492,7 +1492,9 @@ this.notify(
 
 
         this.notify(
-            `🍖 ${pet.name} fed`
+       this.notify(
+    "PET " + pet.name + " fed"
+);
         );
 
 
