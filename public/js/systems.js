@@ -1356,7 +1356,9 @@ this.notify(
 
 
             this.notify(
-                `🐾 ${pet.name} reached Level ${pet.level}!`
+            this.notify(
+    "PET " + pet.name + " reached Level " + pet.level + "!"
+);
             );
 
         }
