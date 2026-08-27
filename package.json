@@ -1,15 +1,17 @@
 {
   "name": "pet-world",
   "version": "1.0.0",
-  "description": "Pet World 3D Survival Game",
+  "description": "PET WORLD - 3D Pet Survival Game",
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^5.1.0",
     "socket.io": "^4.8.1"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
