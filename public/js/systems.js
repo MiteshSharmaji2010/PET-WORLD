@@ -894,7 +894,9 @@ this.unlockAchievement(
 
 
         this.notify(
-            `🐾 ${pet.name} captured!`
+this.notify(
+    "PET " + pet.name + " captured!"
+);
         );
 
 
