@@ -1748,7 +1748,9 @@ this.notify(
 
 
         this.notify(
-            `🏆 Achievement unlocked!`
+      this.notify(
+    "Achievement unlocked!"
+);
         );
 
 
