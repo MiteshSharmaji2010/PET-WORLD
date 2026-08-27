@@ -1,12 +1,19 @@
+```javascript
+// ============================================================
+// PET WORLD
+// public/js/systems.js
+// Complete Game Systems
+// ============================================================
+
 export class GameSystems {
 
     constructor(game) {
 
         this.game = game;
 
-        // =============================================
+        // ====================================================
         // PLAYER PROGRESSION
-        // =============================================
+        // ====================================================
 
         this.level = 1;
 
@@ -14,10 +21,12 @@ export class GameSystems {
 
         this.xpToNextLevel = 100;
 
+        this.totalXP = 0;
 
-        // =============================================
-        // INVENTORY
-        // =============================================
+
+        // ====================================================
+        // PLAYER INVENTORY
+        // ====================================================
 
         this.inventory = {
 
@@ -36,29 +45,63 @@ export class GameSystems {
         };
 
 
-        // =============================================
-        // CAPTURED PETS
-        // =============================================
+        // ====================================================
+        // PET SYSTEM
+        // ====================================================
 
         this.pets = [];
 
         this.activePetId = null;
 
+        this.maxPets = 50;
 
-        // =============================================
-        // GAME PROGRESS
-        // =============================================
+
+        // ====================================================
+        // CURRENCY
+        // ====================================================
 
         this.coins = 0;
+
+
+        // ====================================================
+        // WORLD PROGRESS
+        // ====================================================
 
         this.discoveredLocations = [];
 
         this.achievements = [];
 
 
-        // =============================================
+        // ====================================================
+        // STATISTICS
+        // ====================================================
+
+        this.statistics = {
+
+            creaturesCaptured: 0,
+
+            creaturesDefeated: 0,
+
+            resourcesCollected: 0,
+
+            foodConsumed: 0,
+
+            damageDealt: 0,
+
+            damageTaken: 0,
+
+            distanceTravelled: 0,
+
+            locationsDiscovered: 0,
+
+            playTime: 0
+
+        };
+
+
+        // ====================================================
         // SAVE SYSTEM
-        // =============================================
+        // ====================================================
 
         this.saveKey =
             "pet-world-save-v2";
@@ -68,37 +111,46 @@ export class GameSystems {
         this.saveInterval = 30;
 
 
-        // =============================================
-        // STATE
-        // =============================================
+        // ====================================================
+        // GAME STATE
+        // ====================================================
 
         this.initialized = false;
 
     }
 
 
-    // =================================================
+    // ============================================================
     // INITIALIZE
-    // =================================================
+    // ============================================================
 
     async init() {
 
         this.loadGame();
 
-        this.validateState();
+        this.validateData();
 
         this.initialized = true;
 
-        return true;
+        this.notify(
+            "💾 Game data loaded"
+        );
 
     }
 
 
-    // =================================================
+    // ============================================================
     // UPDATE
-    // =================================================
+    // ============================================================
 
-    update(delta = 0) {
+    update(delta) {
+
+        if (!this.initialized) {
+
+            return;
+
+        }
+
 
         delta =
             Math.max(
@@ -106,6 +158,18 @@ export class GameSystems {
                 Number(delta) || 0
             );
 
+
+        // --------------------------------------------
+        // Play time
+        // --------------------------------------------
+
+        this.statistics.playTime +=
+            delta;
+
+
+        // --------------------------------------------
+        // Auto save
+        // --------------------------------------------
 
         this.saveTimer += delta;
 
@@ -121,135 +185,34 @@ export class GameSystems {
 
         }
 
-
-        this.updatePets(delta);
-
     }
 
 
-    // =================================================
-    // PET UPDATE
-    // =================================================
+    // ============================================================
+    // NOTIFICATION
+    // ============================================================
 
-    updatePets(delta) {
+    notify(message) {
 
         if (
-            !Array.isArray(
-                this.pets
-            )
+            this.game &&
+            this.game.ui &&
+            typeof this.game.ui.notify ===
+            "function"
         ) {
 
-            this.pets = [];
-
-            return;
-
-        }
-
-
-        for (
-            const pet of this.pets
-        ) {
-
-            if (
-                !pet ||
-                typeof pet !== "object"
-            ) {
-
-                continue;
-
-            }
-
-
-            pet.hunger =
-                Math.max(
-                    0,
-                    Math.min(
-                        100,
-                        Number(
-                            pet.hunger
-                        ) || 0
-                    )
-                );
-
-
-            pet.loyalty =
-                Math.max(
-                    0,
-                    Math.min(
-                        100,
-                        Number(
-                            pet.loyalty
-                        ) || 0
-                    )
-                );
-
-
-            // Slowly consume pet hunger.
-
-            if (
-                delta > 0
-            ) {
-
-                pet.hunger =
-                    Math.max(
-                        0,
-                        pet.hunger -
-                        0.15 *
-                        delta
-                    );
-
-            }
-
-
-            // Pet loses a little loyalty
-            // when hunger reaches zero.
-
-            if (
-                pet.hunger <= 0 &&
-                delta > 0
-            ) {
-
-                pet.loyalty =
-                    Math.max(
-                        0,
-                        pet.loyalty -
-                        0.05 *
-                        delta
-                    );
-
-            }
-
-
-            // Keep health valid.
-
-            pet.maxHealth =
-                Math.max(
-                    1,
-                    Number(
-                        pet.maxHealth
-                    ) || 1
-                );
-
-
-            pet.health =
-                Math.max(
-                    0,
-                    Math.min(
-                        pet.maxHealth,
-                        Number(
-                            pet.health
-                        ) || 0
-                    )
-                );
+            this.game.ui.notify(
+                message
+            );
 
         }
 
     }
 
 
-    // =================================================
-    // ADD XP
-    // =================================================
+    // ============================================================
+    // XP
+    // ============================================================
 
     addXP(amount) {
 
@@ -264,12 +227,14 @@ export class GameSystems {
             amount <= 0
         ) {
 
-            return false;
+            return;
 
         }
 
 
         this.xp += amount;
+
+        this.totalXP += amount;
 
 
         let leveledUp = false;
@@ -288,7 +253,7 @@ export class GameSystems {
 
 
             this.xpToNextLevel =
-                this.calculateXPRequirement(
+                this.calculateXPRequired(
                     this.level
                 );
 
@@ -309,17 +274,14 @@ export class GameSystems {
 
         this.saveGame();
 
-
-        return true;
-
     }
 
 
-    // =================================================
-    // XP REQUIREMENT
-    // =================================================
+    // ============================================================
+    // XP CALCULATION
+    // ============================================================
 
-    calculateXPRequirement(level) {
+    calculateXPRequired(level) {
 
         level =
             Math.max(
@@ -330,66 +292,105 @@ export class GameSystems {
             );
 
 
-        return Math.max(
-            100,
-            Math.floor(
-                100 *
-                Math.pow(
-                    1.18,
-                    level - 1
-                )
+        return Math.floor(
+            100 *
+            Math.pow(
+                1.18,
+                level - 1
             )
         );
 
     }
 
 
-    // =================================================
+    // ============================================================
     // LEVEL UP
-    // =================================================
+    // ============================================================
 
     onLevelUp() {
 
         if (
+            this.game &&
             this.game.player
         ) {
 
-            this.game.player.maxHealth +=
-                5;
+            const player =
+                this.game.player;
 
 
-            this.game.player.health =
-                this.game.player.maxHealth;
+            player.maxHealth += 5;
+
+            player.health =
+                player.maxHealth;
 
 
-            this.game.player.maxStamina +=
-                3;
+            player.maxStamina += 3;
+
+            player.stamina =
+                player.maxStamina;
 
 
-            this.game.player.stamina =
-                this.game.player.maxStamina;
-
-        }
-
-
-        if (
-            this.game.ui &&
-            typeof this.game.ui.notify ===
-            "function"
-        ) {
-
-            this.game.ui.notify(
-                `🎉 LEVEL ${this.level}!`
-            );
+            player.maxHunger += 2;
 
         }
+
+
+        this.notify(
+            `🎉 LEVEL ${this.level}!`
+        );
+
+
+        this.unlockAchievement(
+            "level_" + this.level
+        );
 
     }
 
 
-    // =================================================
-    // ADD ITEM
-    // =================================================
+    // ============================================================
+    // GET LEVEL
+    // ============================================================
+
+    getLevel() {
+
+        return this.level;
+
+    }
+
+
+    // ============================================================
+    // GET XP
+    // ============================================================
+
+    getXPPercent() {
+
+        if (
+            this.xpToNextLevel <= 0
+        ) {
+
+            return 0;
+
+        }
+
+
+        return Math.max(
+            0,
+            Math.min(
+                100,
+                (
+                    this.xp /
+                    this.xpToNextLevel
+                ) *
+                100
+            )
+        );
+
+    }
+
+
+    // ============================================================
+    // INVENTORY
+    // ============================================================
 
     addItem(
         item,
@@ -397,9 +398,7 @@ export class GameSystems {
     ) {
 
         if (
-            typeof item !==
-            "string" ||
-            item.trim() === ""
+            !item
         ) {
 
             return false;
@@ -430,22 +429,16 @@ export class GameSystems {
                 )
         ) {
 
-            this.inventory[item] =
-                0;
+            this.inventory[item] = 0;
 
         }
 
 
-        this.inventory[item] =
-            Math.max(
-                0,
-                Number(
-                    this.inventory[item]
-                ) || 0
-            );
-
-
         this.inventory[item] +=
+            amount;
+
+
+        this.statistics.resourcesCollected +=
             amount;
 
 
@@ -457,9 +450,9 @@ export class GameSystems {
     }
 
 
-    // =================================================
+    // ============================================================
     // REMOVE ITEM
-    // =================================================
+    // ============================================================
 
     removeItem(
         item,
@@ -497,11 +490,13 @@ export class GameSystems {
             amount;
 
 
-        this.inventory[item] =
-            Math.max(
-                0,
-                this.inventory[item]
-            );
+        if (
+            this.inventory[item] < 0
+        ) {
+
+            this.inventory[item] = 0;
+
+        }
 
 
         this.saveGame();
@@ -512,9 +507,9 @@ export class GameSystems {
     }
 
 
-    // =================================================
+    // ============================================================
     // CHECK ITEM
-    // =================================================
+    // ============================================================
 
     hasItem(
         item,
@@ -522,47 +517,67 @@ export class GameSystems {
     ) {
 
         amount =
-            Math.max(
-                0,
-                Number(amount) || 0
-            );
+            Number(amount) || 0;
 
 
         return (
             Number(
                 this.inventory[item] || 0
-            ) >=
-            amount
+            ) >= amount
         );
 
     }
 
 
-    // =================================================
-    // GET ITEM COUNT
-    // =================================================
+    // ============================================================
+    // ITEM COUNT
+    // ============================================================
 
-    getItemCount(
-        item
-    ) {
+    getItemCount(item) {
 
-        return Math.max(
-            0,
-            Number(
-                this.inventory[item] || 0
-            )
+        return Number(
+            this.inventory[item] || 0
         );
 
     }
 
 
-    // =================================================
+    // ============================================================
+    // CLEAR ITEM
+    // ============================================================
+
+    clearItem(item) {
+
+        if (
+            Object.prototype.hasOwnProperty
+                .call(
+                    this.inventory,
+                    item
+                )
+        ) {
+
+            this.inventory[item] = 0;
+
+            this.saveGame();
+
+            return true;
+
+        }
+
+
+        return false;
+
+    }
+
+
+    // ============================================================
     // USE HEALING FOOD
-    // =================================================
+    // ============================================================
 
     useHealingFood() {
 
         if (
+            !this.game ||
             !this.game.player
         ) {
 
@@ -571,29 +586,18 @@ export class GameSystems {
         }
 
 
-        if (
-            this.game.player.dead
-        ) {
-
-            return false;
-
-        }
+        const player =
+            this.game.player;
 
 
         if (
-            this.game.player.health >=
-            this.game.player.maxHealth
+            player.health >=
+            player.maxHealth
         ) {
 
-            if (
-                this.game.ui
-            ) {
-
-                this.game.ui.notify(
-                    "❤️ Health is already full."
-                );
-
-            }
+            this.notify(
+                "❤️ Health is already full"
+            );
 
             return false;
 
@@ -607,43 +611,34 @@ export class GameSystems {
             )
         ) {
 
-            if (
-                this.game.ui
-            ) {
-
-                this.game.ui.notify(
-                    "🍖 No food!"
-                );
-
-            }
+            this.notify(
+                "🍖 No food!"
+            );
 
             return false;
 
         }
 
 
-        this.game.player.hunger =
+        player.heal(25);
+
+
+        player.hunger =
             Math.min(
-                this.game.player.maxHunger,
-                this.game.player.hunger +
-                25
+                player.maxHunger,
+                player.hunger + 25
             );
 
 
-        this.game.player.heal(
-            20
+        this.statistics.foodConsumed++;
+
+
+        this.notify(
+            "🍖 Food consumed +25 HP"
         );
 
 
-        if (
-            this.game.ui
-        ) {
-
-            this.game.ui.notify(
-                "🍖 Food used. +20 HP"
-            );
-
-        }
+        this.saveGame();
 
 
         return true;
@@ -651,13 +646,14 @@ export class GameSystems {
     }
 
 
-    // =================================================
+    // ============================================================
     // USE POTION
-    // =================================================
+    // ============================================================
 
     usePotion() {
 
         if (
+            !this.game ||
             !this.game.player
         ) {
 
@@ -666,29 +662,18 @@ export class GameSystems {
         }
 
 
-        if (
-            this.game.player.dead
-        ) {
-
-            return false;
-
-        }
+        const player =
+            this.game.player;
 
 
         if (
-            this.game.player.health >=
-            this.game.player.maxHealth
+            player.health >=
+            player.maxHealth
         ) {
 
-            if (
-                this.game.ui
-            ) {
-
-                this.game.ui.notify(
-                    "❤️ Health is already full."
-                );
-
-            }
+            this.notify(
+                "❤️ Health is already full"
+            );
 
             return false;
 
@@ -702,35 +687,24 @@ export class GameSystems {
             )
         ) {
 
-            if (
-                this.game.ui
-            ) {
-
-                this.game.ui.notify(
-                    "🧪 No potion!"
-                );
-
-            }
+            this.notify(
+                "🧪 No potion!"
+            );
 
             return false;
 
         }
 
 
-        this.game.player.heal(
-            50
+        player.heal(50);
+
+
+        this.notify(
+            "🧪 Potion used +50 HP"
         );
 
 
-        if (
-            this.game.ui
-        ) {
-
-            this.game.ui.notify(
-                "🧪 Potion used. +50 HP"
-            );
-
-        }
+        this.saveGame();
 
 
         return true;
@@ -738,37 +712,16 @@ export class GameSystems {
     }
 
 
-    // =================================================
-    // CAPTURE NEAREST CREATURE
-    // =================================================
+    // ============================================================
+    // CAPTURE CREATURE
+    // ============================================================
 
     captureNearestCreature() {
 
         if (
+            !this.game ||
             !this.game.creatures
         ) {
-
-            return false;
-
-        }
-
-
-        if (
-            !this.hasItem(
-                "captureOrb",
-                1
-            )
-        ) {
-
-            if (
-                this.game.ui
-            ) {
-
-                this.game.ui.notify(
-                    "🔵 No Capture Orb!"
-                );
-
-            }
 
             return false;
 
@@ -778,7 +731,7 @@ export class GameSystems {
         const creature =
             this.game.creatures
                 .getNearestCreature(
-                    6
+                    5
                 );
 
 
@@ -786,140 +739,361 @@ export class GameSystems {
             !creature
         ) {
 
-            if (
-                this.game.ui
-            ) {
-
-                this.game.ui.notify(
-                    "🐾 No creature nearby."
-                );
-
-            }
+            this.notify(
+                "🐾 No creature nearby"
+            );
 
             return false;
 
         }
 
 
-        const success =
-            this.game.creatures
-                .captureNearestCreature();
+        if (
+            creature.dead
+        ) {
+
+            this.notify(
+                "💀 This creature cannot be captured"
+            );
+
+            return false;
+
+        }
 
 
         if (
-            success
+            this.pets.length >=
+            this.maxPets
         ) {
 
-            this.removeItem(
+            this.notify(
+                "🐾 Pet storage is full"
+            );
+
+            return false;
+
+        }
+
+
+        if (
+            !this.removeItem(
+                "captureOrb",
+                1
+            )
+        ) {
+
+            this.notify(
+                "🔵 No Capture Orb!"
+            );
+
+            return false;
+
+        }
+
+
+        let captured = false;
+
+
+        // --------------------------------------------
+        // Use creature manager capture method
+        // --------------------------------------------
+
+        if (
+            typeof creature.capture ===
+            "function"
+        ) {
+
+            captured =
+                creature.capture();
+
+        }
+
+
+        if (
+            typeof this.game.creatures
+                .captureCreature ===
+            "function"
+        ) {
+
+            const result =
+                this.game.creatures
+                    .captureCreature(
+                        creature
+                    );
+
+
+            if (
+                result !== undefined
+            ) {
+
+                captured = result;
+
+            }
+
+        }
+
+
+        // --------------------------------------------
+        // If manager does not return a result,
+        // allow capture.
+        // --------------------------------------------
+
+        if (
+            captured === false
+        ) {
+
+            this.addItem(
                 "captureOrb",
                 1
             );
 
+
+            this.notify(
+                "❌ Capture failed"
+            );
+
+            return false;
+
         }
 
 
-        return success;
+        const pet =
+            this.createPetFromCreature(
+                creature
+            );
+
+
+        const added =
+            this.addPet(
+                pet
+            );
+
+
+        if (
+            !added
+        ) {
+
+            this.addItem(
+                "captureOrb",
+                1
+            );
+
+            return false;
+
+        }
+
+
+        this.statistics.creaturesCaptured++;
+
+
+        this.addXP(50);
+
+
+        this.notify(
+            `🐾 ${pet.name} captured!`
+        );
+
+
+        this.saveGame();
+
+
+        return true;
 
     }
 
 
-    // =================================================
-    // ADD PET
-    // =================================================
+    // ============================================================
+    // CREATE PET FROM CREATURE
+    // ============================================================
 
-    addPet(
-        pet
+    createPetFromCreature(
+        creature
     ) {
 
-        if (
-            !pet ||
-            pet.id === undefined ||
-            pet.id === null
-        ) {
-
-            return false;
-
-        }
+        const speciesId =
+            creature.speciesId ||
+            creature.type ||
+            "creature";
 
 
-        const existing =
-            this.pets.find(
-                item =>
-                    String(item.id) ===
-                    String(pet.id)
-            );
+        const name =
+            creature.name ||
+            creature.species ||
+            "Wild Pet";
 
 
-        if (
-            existing
-        ) {
-
-            return false;
-
-        }
+        const rarity =
+            creature.rarity ||
+            "Common";
 
 
-        const level =
-            Math.max(
-                1,
-                Math.floor(
-                    Number(
-                        pet.level
-                    ) || 1
-                )
-            );
+        const health =
+            Number(
+                creature.health
+            ) ||
+            50;
 
 
         const maxHealth =
-            Math.max(
-                1,
+            Number(
+                creature.maxHealth
+            ) ||
+            health;
+
+
+        const damage =
+            Number(
+                creature.damage
+            ) ||
+            5;
+
+
+        const speed =
+            Number(
+                creature.speed
+            ) ||
+            1;
+
+
+        return {
+
+            id:
+                this.createUniquePetId(),
+
+            speciesId,
+
+            name,
+
+            rarity,
+
+            level:
                 Number(
-                    pet.maxHealth
-                ) || 50
-            );
+                    creature.level
+                ) || 1,
+
+            health,
+
+            maxHealth,
+
+            damage,
+
+            speed,
+
+            experience: 0,
+
+            hunger: 100,
+
+            loyalty: 50
+
+        };
+
+    }
+
+
+    // ============================================================
+    // UNIQUE PET ID
+    // ============================================================
+
+    createUniquePetId() {
+
+        return (
+            "pet_" +
+            Date.now() +
+            "_" +
+            Math.random()
+                .toString(36)
+                .slice(2, 10)
+        );
+
+    }
+
+
+    // ============================================================
+    // ADD PET
+    // ============================================================
+
+    addPet(pet) {
+
+        if (
+            !pet
+        ) {
+
+            return false;
+
+        }
+
+
+        if (
+            this.pets.length >=
+            this.maxPets
+        ) {
+
+            return false;
+
+        }
+
+
+        const petId =
+            pet.id ||
+            this.createUniquePetId();
+
+
+        if (
+            this.pets.some(
+                existing =>
+                    existing.id === petId
+            )
+        ) {
+
+            return false;
+
+        }
 
 
         const savedPet = {
 
             id:
-                pet.id,
+                petId,
 
             speciesId:
                 pet.speciesId ||
                 "unknown",
 
             name:
-                String(
-                    pet.name ||
-                    "Unknown"
-                ),
+                pet.name ||
+                "Unknown",
 
             rarity:
-                String(
-                    pet.rarity ||
-                    "Common"
-                ),
+                pet.rarity ||
+                "Common",
 
             level:
-                level,
+                Math.max(
+                    1,
+                    Number(
+                        pet.level
+                    ) || 1
+                ),
 
             health:
                 Math.max(
                     1,
-                    Math.min(
-                        maxHealth,
-                        Number(
-                            pet.health
-                        ) || maxHealth
-                    )
+                    Number(
+                        pet.health
+                    ) || 50
                 ),
 
             maxHealth:
-                maxHealth,
+                Math.max(
+                    1,
+                    Number(
+                        pet.maxHealth
+                    ) || 50
+                ),
 
             damage:
                 Math.max(
-                    1,
+                    0,
                     Number(
                         pet.damage
                     ) || 5
@@ -972,8 +1146,7 @@ export class GameSystems {
 
 
         if (
-            this.activePetId ===
-            null
+            this.activePetId === null
         ) {
 
             this.activePetId =
@@ -985,43 +1158,26 @@ export class GameSystems {
         this.saveGame();
 
 
-        if (
-            this.game.ui &&
-            typeof this.game.ui.notify ===
-            "function"
-        ) {
-
-            this.game.ui.notify(
-                `🐾 ${savedPet.name} added to your pets!`
-            );
-
-        }
-
-
         return true;
 
     }
 
 
-    // =================================================
+    // ============================================================
     // REMOVE PET
-    // =================================================
+    // ============================================================
 
-    removePet(
-        petId
-    ) {
+    removePet(petId) {
 
         const index =
             this.pets.findIndex(
                 pet =>
-                    String(pet.id) ===
-                    String(petId)
+                    pet.id === petId
             );
 
 
         if (
-            index ===
-            -1
+            index === -1
         ) {
 
             return false;
@@ -1030,18 +1186,15 @@ export class GameSystems {
 
 
         const removed =
-            this.pets[index];
-
-
-        this.pets.splice(
-            index,
-            1
-        );
+            this.pets.splice(
+                index,
+                1
+            )[0];
 
 
         if (
-            String(this.activePetId) ===
-            String(petId)
+            this.activePetId ===
+            petId
         ) {
 
             this.activePetId =
@@ -1055,50 +1208,36 @@ export class GameSystems {
         this.saveGame();
 
 
-        if (
-            this.game.ui
-        ) {
-
-            this.game.ui.notify(
-                `🐾 ${removed.name} removed.`
-            );
-
-        }
-
-
-        return true;
+        return removed;
 
     }
 
 
-    // =================================================
+    // ============================================================
     // GET PET
-    // =================================================
+    // ============================================================
 
-    getPet(
-        petId
-    ) {
+    getPet(petId) {
 
-        return this.pets.find(
-            pet =>
-                String(pet.id) ===
-                String(petId)
-        ) || null;
+        return (
+            this.pets.find(
+                pet =>
+                    pet.id === petId
+            ) ||
+            null
+        );
 
     }
 
 
-    // =================================================
+    // ============================================================
     // GET ACTIVE PET
-    // =================================================
+    // ============================================================
 
     getActivePet() {
 
         if (
-            this.activePetId ===
-            null ||
-            this.activePetId ===
-            undefined
+            !this.activePetId
         ) {
 
             return null;
@@ -1106,43 +1245,18 @@ export class GameSystems {
         }
 
 
-        const pet =
-            this.getPet(
-                this.activePetId
-            );
-
-
-        if (
-            !pet
-        ) {
-
-            this.activePetId =
-                this.pets.length > 0
-                    ? this.pets[0].id
-                    : null;
-
-
-            return this.activePetId !== null
-                ? this.getPet(
-                    this.activePetId
-                )
-                : null;
-
-        }
-
-
-        return pet;
+        return this.getPet(
+            this.activePetId
+        );
 
     }
 
 
-    // =================================================
+    // ============================================================
     // SET ACTIVE PET
-    // =================================================
+    // ============================================================
 
-    setActivePet(
-        petId
-    ) {
+    setActivePet(petId) {
 
         const pet =
             this.getPet(
@@ -1163,20 +1277,12 @@ export class GameSystems {
             pet.id;
 
 
+        this.notify(
+            `🐾 ${pet.name} is now active!`
+        );
+
+
         this.saveGame();
-
-
-        if (
-            this.game.ui &&
-            typeof this.game.ui.notify ===
-            "function"
-        ) {
-
-            this.game.ui.notify(
-                `${pet.name} is now active!`
-            );
-
-        }
 
 
         return true;
@@ -1184,17 +1290,265 @@ export class GameSystems {
     }
 
 
-    // =================================================
-    // ADD COINS
-    // =================================================
+    // ============================================================
+    // PET XP
+    // ============================================================
 
-    addCoins(
+    addPetXP(
+        petId,
         amount
     ) {
 
+        const pet =
+            this.getPet(
+                petId
+            );
+
+
+        if (
+            !pet
+        ) {
+
+            return false;
+
+        }
+
+
         amount =
-            Math.floor(
+            Math.max(
+                0,
                 Number(amount) || 0
+            );
+
+
+        pet.experience += amount;
+
+
+        const required =
+            this.getPetXPRequired(
+                pet.level
+            );
+
+
+        if (
+            pet.experience >= required
+        ) {
+
+            pet.experience -=
+                required;
+
+            pet.level++;
+
+            pet.maxHealth += 5;
+
+            pet.health =
+                pet.maxHealth;
+
+            pet.damage += 1;
+
+
+            this.notify(
+                `🐾 ${pet.name} reached Level ${pet.level}!`
+            );
+
+        }
+
+
+        this.saveGame();
+
+
+        return true;
+
+    }
+
+
+    // ============================================================
+    // PET XP REQUIRED
+    // ============================================================
+
+    getPetXPRequired(level) {
+
+        return Math.floor(
+            50 *
+            Math.pow(
+                1.2,
+                Math.max(
+                    0,
+                    level - 1
+                )
+            )
+        );
+
+    }
+
+
+    // ============================================================
+    // PET HEAL
+    // ============================================================
+
+    healPet(
+        petId,
+        amount = 20
+    ) {
+
+        const pet =
+            this.getPet(
+                petId
+            );
+
+
+        if (
+            !pet
+        ) {
+
+            return false;
+
+        }
+
+
+        amount =
+            Math.max(
+                0,
+                Number(amount) || 0
+            );
+
+
+        pet.health =
+            Math.min(
+                pet.maxHealth,
+                pet.health + amount
+            );
+
+
+        this.saveGame();
+
+
+        return true;
+
+    }
+
+
+    // ============================================================
+    // PET HUNGER
+    // ============================================================
+
+    feedPet(
+        petId
+    ) {
+
+        const pet =
+            this.getPet(
+                petId
+            );
+
+
+        if (
+            !pet
+        ) {
+
+            return false;
+
+        }
+
+
+        if (
+            !this.removeItem(
+                "food",
+                1
+            )
+        ) {
+
+            this.notify(
+                "🍖 No food!"
+            );
+
+            return false;
+
+        }
+
+
+        pet.hunger =
+            Math.min(
+                100,
+                pet.hunger + 30
+            );
+
+
+        pet.loyalty =
+            Math.min(
+                100,
+                pet.loyalty + 2
+            );
+
+
+        this.notify(
+            `🍖 ${pet.name} fed`
+        );
+
+
+        this.saveGame();
+
+
+        return true;
+
+    }
+
+
+    // ============================================================
+    // PET LOYALTY
+    // ============================================================
+
+    increasePetLoyalty(
+        petId,
+        amount = 1
+    ) {
+
+        const pet =
+            this.getPet(
+                petId
+            );
+
+
+        if (
+            !pet
+        ) {
+
+            return false;
+
+        }
+
+
+        pet.loyalty =
+            Math.min(
+                100,
+                pet.loyalty +
+                Math.max(
+                    0,
+                    Number(amount) || 0
+                )
+            );
+
+
+        this.saveGame();
+
+
+        return true;
+
+    }
+
+
+    // ============================================================
+    // COINS
+    // ============================================================
+
+    addCoins(amount) {
+
+        amount =
+            Math.max(
+                0,
+                Math.floor(
+                    Number(amount) || 0
+                )
             );
 
 
@@ -1211,11 +1565,9 @@ export class GameSystems {
             amount;
 
 
-        this.coins =
-            Math.max(
-                0,
-                this.coins
-            );
+        this.notify(
+            `🪙 +${amount} coins`
+        );
 
 
         this.saveGame();
@@ -1226,17 +1578,18 @@ export class GameSystems {
     }
 
 
-    // =================================================
+    // ============================================================
     // SPEND COINS
-    // =================================================
+    // ============================================================
 
-    spendCoins(
-        amount
-    ) {
+    spendCoins(amount) {
 
         amount =
-            Math.floor(
-                Number(amount) || 0
+            Math.max(
+                0,
+                Math.floor(
+                    Number(amount) || 0
+                )
             );
 
 
@@ -1254,6 +1607,10 @@ export class GameSystems {
             amount
         ) {
 
+            this.notify(
+                "🪙 Not enough coins"
+            );
+
             return false;
 
         }
@@ -1263,13 +1620,6 @@ export class GameSystems {
             amount;
 
 
-        this.coins =
-            Math.max(
-                0,
-                this.coins
-            );
-
-
         this.saveGame();
 
 
@@ -1278,20 +1628,16 @@ export class GameSystems {
     }
 
 
-    // =================================================
-    // DISCOVER LOCATION
-    // =================================================
+    // ============================================================
+    // LOCATION DISCOVERY
+    // ============================================================
 
     discoverLocation(
         locationId
     ) {
 
         if (
-            locationId ===
-            undefined ||
-            locationId ===
-            null ||
-            String(locationId).trim() === ""
+            !locationId
         ) {
 
             return false;
@@ -1299,16 +1645,10 @@ export class GameSystems {
         }
 
 
-        const id =
-            String(
-                locationId
-            );
-
-
         if (
             this.discoveredLocations
                 .includes(
-                    id
+                    locationId
                 )
         ) {
 
@@ -1318,21 +1658,21 @@ export class GameSystems {
 
 
         this.discoveredLocations.push(
-            id
+            locationId
         );
 
 
-        if (
-            this.game.ui &&
-            typeof this.game.ui.notify ===
-            "function"
-        ) {
+        this.statistics.locationsDiscovered++;
 
-            this.game.ui.notify(
-                "📍 New location discovered!"
-            );
 
-        }
+        this.addXP(
+            25
+        );
+
+
+        this.notify(
+            "📍 New location discovered!"
+        );
 
 
         this.saveGame();
@@ -1343,38 +1683,32 @@ export class GameSystems {
     }
 
 
-    // =================================================
-    // CHECK LOCATION
-    // =================================================
+    // ============================================================
+    // IS LOCATION DISCOVERED
+    // ============================================================
 
-    hasDiscoveredLocation(
+    isLocationDiscovered(
         locationId
     ) {
 
         return this.discoveredLocations
             .includes(
-                String(
-                    locationId
-                )
+                locationId
             );
 
     }
 
 
-    // =================================================
-    // ACHIEVEMENT
-    // =================================================
+    // ============================================================
+    // ACHIEVEMENTS
+    // ============================================================
 
     unlockAchievement(
         achievementId
     ) {
 
         if (
-            achievementId ===
-            undefined ||
-            achievementId ===
-            null ||
-            String(achievementId).trim() === ""
+            !achievementId
         ) {
 
             return false;
@@ -1382,16 +1716,10 @@ export class GameSystems {
         }
 
 
-        const id =
-            String(
-                achievementId
-            );
-
-
         if (
             this.achievements
                 .includes(
-                    id
+                    achievementId
                 )
         ) {
 
@@ -1401,21 +1729,13 @@ export class GameSystems {
 
 
         this.achievements.push(
-            id
+            achievementId
         );
 
 
-        if (
-            this.game.ui &&
-            typeof this.game.ui.notify ===
-            "function"
-        ) {
-
-            this.game.ui.notify(
-                "🏆 Achievement unlocked!"
-            );
-
-        }
+        this.notify(
+            `🏆 Achievement unlocked!`
+        );
 
 
         this.saveGame();
@@ -1426,9 +1746,9 @@ export class GameSystems {
     }
 
 
-    // =================================================
+    // ============================================================
     // CHECK ACHIEVEMENT
-    // =================================================
+    // ============================================================
 
     hasAchievement(
         achievementId
@@ -1436,387 +1756,172 @@ export class GameSystems {
 
         return this.achievements
             .includes(
-                String(
-                    achievementId
-                )
+                achievementId
             );
 
     }
 
 
-    // =================================================
-    // SAVE GAME
-    // =================================================
-
-    saveGame() {
-
-        try {
-
-            const data = {
-
-                version:
-                    2,
-
-                level:
-                    this.level,
-
-                xp:
-                    this.xp,
-
-                xpToNextLevel:
-                    this.xpToNextLevel,
-
-                inventory:
-                    {
-                        ...this.inventory
-                    },
-
-                pets:
-                    this.pets.map(
-                        pet => ({
-                            ...pet
-                        })
-                    ),
-
-                activePetId:
-                    this.activePetId,
-
-                coins:
-                    this.coins,
-
-                discoveredLocations:
-                    [
-                        ...this.discoveredLocations
-                    ],
-
-                achievements:
-                    [
-                        ...this.achievements
-                    ]
-
-            };
-
-
-            localStorage.setItem(
-                this.saveKey,
-                JSON.stringify(
-                    data
-                )
-            );
-
-
-            return true;
-
-
-        } catch (
-            error
-        ) {
-
-            console.error(
-                "PET WORLD save failed:",
-                error
-            );
-
-
-            return false;
-
-        }
-
-    }
-
-
-    // =================================================
-    // LOAD GAME
-    // =================================================
-
-    loadGame() {
-
-        try {
-
-            let raw =
-                localStorage.getItem(
-                    this.saveKey
-                );
-
-
-            // Backward compatibility.
-
-            if (
-                !raw
-            ) {
-
-                raw =
-                    localStorage.getItem(
-                        "pet-world-save-v1"
-                    );
-
-            }
-
-
-            if (
-                !raw
-            ) {
-
-                return false;
-
-            }
-
-
-            const data =
-                JSON.parse(
-                    raw
-                );
-
-
-            if (
-                !data ||
-                typeof data !==
-                "object"
-            ) {
-
-                return false;
-
-            }
-
-
-            // -----------------------------
-            // LEVEL
-            // -----------------------------
-
-            if (
-                Number.isFinite(
-                    Number(
-                        data.level
-                    )
-                )
-            ) {
-
-                this.level =
-                    Math.max(
-                        1,
-                        Math.floor(
-                            Number(
-                                data.level
-                            )
-                        )
-                    );
-
-            }
-
-
-            // -----------------------------
-            // XP
-            // -----------------------------
-
-            if (
-                Number.isFinite(
-                    Number(
-                        data.xp
-                    )
-                )
-            ) {
-
-                this.xp =
-                    Math.max(
-                        0,
-                        Number(
-                            data.xp
-                        )
-                    );
-
-            }
-
-
-            // -----------------------------
-            // XP REQUIREMENT
-            // -----------------------------
-
-            this.xpToNextLevel =
-                Math.max(
-                    1,
-                    Number(
-                        data.xpToNextLevel
-                    ) ||
-                    this.calculateXPRequirement(
-                        this.level
-                    )
-                );
-
-
-            // -----------------------------
-            // INVENTORY
-            // -----------------------------
-
-            if (
-                data.inventory &&
-                typeof data.inventory ===
-                "object"
-            ) {
-
-                this.inventory =
-                    {
-                        ...this.inventory,
-                        ...data.inventory
-                    };
-
-            }
-
-
-            // -----------------------------
-            // PETS
-            // -----------------------------
-
-            if (
-                Array.isArray(
-                    data.pets
-                )
-            ) {
-
-                this.pets =
-                    data.pets;
-
-            }
-
-
-            // -----------------------------
-            // ACTIVE PET
-            // -----------------------------
-
-            if (
-                data.activePetId !==
-                undefined
-            ) {
-
-                this.activePetId =
-                    data.activePetId;
-
-            }
-
-
-            // -----------------------------
-            // COINS
-            // -----------------------------
-
-            if (
-                Number.isFinite(
-                    Number(
-                        data.coins
-                    )
-                )
-            ) {
-
-                this.coins =
-                    Math.max(
-                        0,
-                        Math.floor(
-                            Number(
-                                data.coins
-                            )
-                        )
-                    );
-
-            }
-
-
-            // -----------------------------
-            // LOCATIONS
-            // -----------------------------
-
-            if (
-                Array.isArray(
-                    data.discoveredLocations
-                )
-            ) {
-
-                this.discoveredLocations =
-                    data.discoveredLocations
-                        .map(
-                            value =>
-                                String(value)
-                        );
-
-            }
-
-
-            // -----------------------------
-            // ACHIEVEMENTS
-            // -----------------------------
-
-            if (
-                Array.isArray(
-                    data.achievements
-                )
-            ) {
-
-                this.achievements =
-                    data.achievements
-                        .map(
-                            value =>
-                                String(value)
-                        );
-
-            }
-
-
-            this.validateState();
-
-
-            return true;
-
-
-        } catch (
-            error
-        ) {
-
-            console.error(
-                "PET WORLD load failed:",
-                error
-            );
-
-
-            return false;
-
-        }
-
-    }
-
-
-    // =================================================
-    // VALIDATE STATE
-    // =================================================
-
-    validateState() {
-
-        this.level =
-            Math.max(
-                1,
-                Math.floor(
-                    Number(
-                        this.level
-                    ) || 1
-                )
-            );
-
-
-        this.xp =
+    // ============================================================
+    // DAMAGE STATISTICS
+    // ============================================================
+
+    recordDamageDealt(
+        amount
+    ) {
+
+        amount =
             Math.max(
                 0,
-                Number(
-                    this.xp
-                ) || 0
+                Number(amount) || 0
             );
 
 
-        this.xpToNextLevel =
+        this.statistics.damageDealt +=
+            amount;
+
+    }
+
+
+    // ============================================================
+    // DAMAGE TAKEN STATISTICS
+    // ============================================================
+
+    recordDamageTaken(
+        amount
+    ) {
+
+        amount =
             Math.max(
-                1,
-                Number(
-                    this.xpToNextLevel
-                ) ||
-                this.calculateXPRequirement(
-                    this.level
-                )
+                0,
+                Number(amount) || 0
             );
+
+
+        this.statistics.damageTaken +=
+            amount;
+
+    }
+
+
+    // ============================================================
+    // CREATURE DEFEATED
+    // ============================================================
+
+    recordCreatureDefeated() {
+
+        this.statistics.creaturesDefeated++;
+
+
+        this.addXP(
+            20
+        );
+
+
+        this.addCoins(
+            5
+        );
+
+
+        if (
+            this.statistics
+                .creaturesDefeated >= 10
+        ) {
+
+            this.unlockAchievement(
+                "hunter_10"
+            );
+
+        }
+
+    }
+
+
+    // ============================================================
+    // RESOURCE COLLECTED
+    // ============================================================
+
+    recordResourceCollected(
+        amount = 1
+    ) {
+
+        amount =
+            Math.max(
+                0,
+                Number(amount) || 0
+            );
+
+
+        this.statistics.resourcesCollected +=
+            amount;
+
+    }
+
+
+    // ============================================================
+    // DISTANCE
+    // ============================================================
+
+    recordDistance(
+        distance
+    ) {
+
+        distance =
+            Math.max(
+                0,
+                Number(distance) || 0
+            );
+
+
+        this.statistics.distanceTravelled +=
+            distance;
+
+    }
+
+
+    // ============================================================
+    // VALIDATE SAVE DATA
+    // ============================================================
+
+    validateData() {
+
+        if (
+            !Number.isFinite(
+                this.level
+            ) ||
+            this.level < 1
+        ) {
+
+            this.level = 1;
+
+        }
+
+
+        if (
+            !Number.isFinite(
+                this.xp
+            ) ||
+            this.xp < 0
+        ) {
+
+            this.xp = 0;
+
+        }
+
+
+        if (
+            !Number.isFinite(
+                this.xpToNextLevel
+            ) ||
+            this.xpToNextLevel <= 0
+        ) {
+
+            this.xpToNextLevel =
+                this.calculateXPRequired(
+                    this.level
+                );
+
+        }
 
 
         if (
@@ -1830,7 +1935,7 @@ export class GameSystems {
         }
 
 
-        const defaultInventory = {
+        const defaultItems = {
 
             wood: 0,
 
@@ -1847,28 +1952,22 @@ export class GameSystems {
         };
 
 
-        this.inventory =
-            {
-                ...defaultInventory,
-                ...this.inventory
-            };
-
-
-        Object.keys(
-            this.inventory
-        )
+        Object.keys(defaultItems)
             .forEach(
                 item => {
 
-                    this.inventory[item] =
-                        Math.max(
-                            0,
-                            Math.floor(
-                                Number(
-                                    this.inventory[item]
-                                ) || 0
+                    if (
+                        !Number.isFinite(
+                            Number(
+                                this.inventory[item]
                             )
-                        );
+                        )
+                    ) {
+
+                        this.inventory[item] =
+                            defaultItems[item];
+
+                    }
 
                 }
             );
@@ -1907,70 +2006,539 @@ export class GameSystems {
         }
 
 
-        this.coins =
-            Math.max(
-                0,
-                Math.floor(
-                    Number(
-                        this.coins
-                    ) || 0
-                )
-            );
+        if (
+            !this.statistics ||
+            typeof this.statistics !==
+            "object"
+        ) {
+
+            this.statistics = {};
+
+        }
 
 
-        // Remove invalid pets.
+        Object.keys({
+            creaturesCaptured: 0,
+            creaturesDefeated: 0,
+            resourcesCollected: 0,
+            foodConsumed: 0,
+            damageDealt: 0,
+            damageTaken: 0,
+            distanceTravelled: 0,
+            locationsDiscovered: 0,
+            playTime: 0
+        }).forEach(
+            key => {
 
-        this.pets =
-            this.pets.filter(
-                pet =>
-                    pet &&
-                    pet.id !==
-                    undefined &&
-                    pet.id !==
-                    null
-            );
+                if (
+                    !Number.isFinite(
+                        Number(
+                            this.statistics[key]
+                        )
+                    )
+                ) {
+
+                    this.statistics[key] = 0;
+
+                }
+
+            }
+        );
 
 
-        // Repair active pet.
+        // Fix invalid active pet
 
         if (
-            this.pets.length === 0
+            this.activePetId &&
+            !this.getPet(
+                this.activePetId
+            )
         ) {
 
             this.activePetId =
-                null;
-
-        } else {
-
-            const activeExists =
-                this.pets.some(
-                    pet =>
-                        String(
-                            pet.id
-                        ) ===
-                        String(
-                            this.activePetId
-                        )
-                );
-
-
-            if (
-                !activeExists
-            ) {
-
-                this.activePetId =
-                    this.pets[0].id;
-
-            }
+                this.pets.length > 0
+                    ? this.pets[0].id
+                    : null;
 
         }
 
     }
 
 
-    // =================================================
+    // ============================================================
+    // SAVE GAME
+    // ============================================================
+
+    saveGame() {
+
+        try {
+
+            this.validateData();
+
+
+            const data = {
+
+                version: 2,
+
+                level:
+                    this.level,
+
+                xp:
+                    this.xp,
+
+                xpToNextLevel:
+                    this.xpToNextLevel,
+
+                totalXP:
+                    this.totalXP,
+
+                inventory:
+                    {
+                        ...this.inventory
+                    },
+
+                pets:
+                    JSON.parse(
+                        JSON.stringify(
+                            this.pets
+                        )
+                    ),
+
+                activePetId:
+                    this.activePetId,
+
+                coins:
+                    this.coins,
+
+                discoveredLocations:
+                    [
+                        ...this.discoveredLocations
+                    ],
+
+                achievements:
+                    [
+                        ...this.achievements
+                    ],
+
+                statistics:
+                    {
+                        ...this.statistics
+                    }
+
+            };
+
+
+            localStorage.setItem(
+                this.saveKey,
+                JSON.stringify(
+                    data
+                )
+            );
+
+
+            return true;
+
+        } catch (
+            error
+        ) {
+
+            console.error(
+                "PET WORLD save failed:",
+                error
+            );
+
+
+            return false;
+
+        }
+
+    }
+
+
+    // ============================================================
+    // LOAD GAME
+    // ============================================================
+
+    loadGame() {
+
+        try {
+
+            const raw =
+                localStorage.getItem(
+                    this.saveKey
+                );
+
+
+            if (
+                !raw
+            ) {
+
+                return false;
+
+            }
+
+
+            const data =
+                JSON.parse(
+                    raw
+                );
+
+
+            if (
+                !data ||
+                typeof data !==
+                "object"
+            ) {
+
+                return false;
+
+            }
+
+
+            // --------------------------------------------
+            // Player progression
+            // --------------------------------------------
+
+            if (
+                Number.isFinite(
+                    Number(
+                        data.level
+                    )
+                )
+            ) {
+
+                this.level =
+                    Math.max(
+                        1,
+                        Number(
+                            data.level
+                        )
+                    );
+
+            }
+
+
+            if (
+                Number.isFinite(
+                    Number(
+                        data.xp
+                    )
+                )
+            ) {
+
+                this.xp =
+                    Math.max(
+                        0,
+                        Number(
+                            data.xp
+                        )
+                    );
+
+            }
+
+
+            if (
+                Number.isFinite(
+                    Number(
+                        data.totalXP
+                    )
+                )
+            ) {
+
+                this.totalXP =
+                    Math.max(
+                        0,
+                        Number(
+                            data.totalXP
+                        )
+                    );
+
+            }
+
+
+            this.xpToNextLevel =
+                this.calculateXPRequired(
+                    this.level
+                );
+
+
+            // --------------------------------------------
+            // Inventory
+            // --------------------------------------------
+
+            if (
+                data.inventory &&
+                typeof data.inventory ===
+                "object"
+            ) {
+
+                this.inventory = {
+
+                    ...this.inventory,
+
+                    ...data.inventory
+
+                };
+
+            }
+
+
+            // --------------------------------------------
+            // Pets
+            // --------------------------------------------
+
+            if (
+                Array.isArray(
+                    data.pets
+                )
+            ) {
+
+                this.pets =
+                    data.pets;
+
+            }
+
+
+            // --------------------------------------------
+            // Active pet
+            // --------------------------------------------
+
+            if (
+                data.activePetId !==
+                undefined
+            ) {
+
+                this.activePetId =
+                    data.activePetId;
+
+            }
+
+
+            // --------------------------------------------
+            // Coins
+            // --------------------------------------------
+
+            if (
+                Number.isFinite(
+                    Number(
+                        data.coins
+                    )
+                )
+            ) {
+
+                this.coins =
+                    Math.max(
+                        0,
+                        Number(
+                            data.coins
+                        )
+                    );
+
+            }
+
+
+            // --------------------------------------------
+            // Locations
+            // --------------------------------------------
+
+            if (
+                Array.isArray(
+                    data.discoveredLocations
+                )
+            ) {
+
+                this.discoveredLocations =
+                    data.discoveredLocations;
+
+            }
+
+
+            // --------------------------------------------
+            // Achievements
+            // --------------------------------------------
+
+            if (
+                Array.isArray(
+                    data.achievements
+                )
+            ) {
+
+                this.achievements =
+                    data.achievements;
+
+            }
+
+
+            // --------------------------------------------
+            // Statistics
+            // --------------------------------------------
+
+            if (
+                data.statistics &&
+                typeof data.statistics ===
+                "object"
+            ) {
+
+                this.statistics = {
+
+                    ...this.statistics,
+
+                    ...data.statistics
+
+                };
+
+            }
+
+
+            this.validateData();
+
+
+            return true;
+
+        } catch (
+            error
+        ) {
+
+            console.error(
+                "PET WORLD load failed:",
+                error
+            );
+
+
+            return false;
+
+        }
+
+    }
+
+
+    // ============================================================
+    // EXPORT SAVE
+    // ============================================================
+
+    exportSave() {
+
+        try {
+
+            this.saveGame();
+
+
+            const data =
+                localStorage.getItem(
+                    this.saveKey
+                );
+
+
+            if (
+                !data
+            ) {
+
+                return null;
+
+            }
+
+
+            return data;
+
+        } catch (
+            error
+        ) {
+
+            console.error(
+                "Export save failed:",
+                error
+            );
+
+
+            return null;
+
+        }
+
+    }
+
+
+    // ============================================================
+    // IMPORT SAVE
+    // ============================================================
+
+    importSave(
+        saveString
+    ) {
+
+        try {
+
+            if (
+                typeof saveString !==
+                "string"
+            ) {
+
+                return false;
+
+            }
+
+
+            const data =
+                JSON.parse(
+                    saveString
+                );
+
+
+            if (
+                !data ||
+                typeof data !==
+                "object"
+            ) {
+
+                return false;
+
+            }
+
+
+            localStorage.setItem(
+                this.saveKey,
+                JSON.stringify(
+                    data
+                )
+            );
+
+
+            this.loadGame();
+
+            this.validateData();
+
+
+            this.notify(
+                "📥 Save imported"
+            );
+
+
+            return true;
+
+        } catch (
+            error
+        ) {
+
+            console.error(
+                "Import save failed:",
+                error
+            );
+
+
+            this.notify(
+                "❌ Invalid save file"
+            );
+
+
+            return false;
+
+        }
+
+    }
+
+
+    // ============================================================
     // RESET GAME
-    // =================================================
+    // ============================================================
 
     resetGame() {
 
@@ -1980,35 +2548,69 @@ export class GameSystems {
                 this.saveKey
             );
 
-            localStorage.removeItem(
-                "pet-world-save-v1"
-            );
-
         } catch (
             error
         ) {
 
             console.error(
-                "PET WORLD reset failed:",
+                "Reset failed:",
                 error
             );
 
         }
 
 
-        if (
-            this.game &&
-            typeof this.game.stop ===
-            "function"
-        ) {
+        location.reload();
 
-            this.game.stop();
-
-        }
+    }
 
 
-        window.location.reload();
+    // ============================================================
+    // DEBUG / GIVE ITEMS
+    // ============================================================
+
+    debugGiveItems() {
+
+        this.addItem(
+            "wood",
+            100
+        );
+
+        this.addItem(
+            "stone",
+            100
+        );
+
+        this.addItem(
+            "fiber",
+            100
+        );
+
+        this.addItem(
+            "food",
+            20
+        );
+
+        this.addItem(
+            "captureOrb",
+            20
+        );
+
+        this.addItem(
+            "potion",
+            10
+        );
+
+        this.addCoins(
+            1000
+        );
+
+
+        this.notify(
+            "🛠️ Debug resources added"
+        );
 
     }
 
 }
+```
