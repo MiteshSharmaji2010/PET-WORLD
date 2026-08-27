@@ -1,243 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 
     <meta charset="UTF-8">
 
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     >
 
     <meta
         name="theme-color"
-        content="#111820"
+        content="#081016"
+    >
+
+    <meta
+        name="description"
+        content="PET WORLD - Open World Pet Capture Adventure"
     >
 
     <title>PET WORLD</title>
 
-    <link
-        rel="stylesheet"
-        href="./css/style.css"
-    >
-
-</head>
-
-
-<body>
-
-    <!-- ==========================================
-         LOADING SCREEN
-         ========================================== -->
-
-    <div id="loading-screen">
-
-        <div class="loading-box">
-
-            <div class="game-logo">
-                PET WORLD
-            </div>
-
-            <div class="loading-subtitle">
-                OPEN WORLD • PET CAPTURE • SURVIVAL
-            </div>
-
-            <div class="loading-bar">
-
-                <div
-                    id="loading-progress"
-                ></div>
-
-            </div>
-
-            <div id="loading-text">
-                Loading world...
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- ==========================================
-         GAME
-         ========================================== -->
-
-    <script type="module">
-
-        import { Game }
-        from "./js/game.js";
-
-
-        const loadingScreen =
-            document.getElementById(
-                "loading-screen"
-            );
-
-
-        const loadingProgress =
-            document.getElementById(
-                "loading-progress"
-            );
-
-
-        const loadingText =
-            document.getElementById(
-                "loading-text"
-            );
-
-
-        function setLoading(
-            progress,
-            text
-        ) {
-
-            loadingProgress.style.width =
-                `${progress}%`;
-
-            loadingText.textContent =
-                text;
-
-        }
-
-
-        async function startGame() {
-
-            try {
-
-                setLoading(
-                    10,
-                    "Preparing engine..."
-                );
-
-
-                await wait(300);
-
-
-                setLoading(
-                    25,
-                    "Creating world..."
-                );
-
-
-                await wait(300);
-
-
-                setLoading(
-                    45,
-                    "Loading player..."
-                );
-
-
-                await wait(300);
-
-
-                setLoading(
-                    65,
-                    "Finding wild pets..."
-                );
-
-
-                await wait(300);
-
-
-                setLoading(
-                    80,
-                    "Preparing controls..."
-                );
-
-
-                await wait(300);
-
-
-                const game =
-                    new Game();
-
-
-                window.petWorldGame =
-                    game;
-
-
-                setLoading(
-                    90,
-                    "Starting game..."
-                );
-
-
-                await game.init();
-
-
-                setLoading(
-                    100,
-                    "Ready!"
-                );
-
-
-                await wait(500);
-
-
-                loadingScreen.classList.add(
-                    "hidden"
-                );
-
-
-                setTimeout(
-                    () => {
-
-                        loadingScreen.remove();
-
-                    },
-                    700
-                );
-
-
-            } catch (
-                error
-            ) {
-
-                console.error(
-                    "PET WORLD ERROR:",
-                    error
-                );
-
-
-                loadingText.textContent =
-                    "Game failed to start. Check Console.";
-
-                loadingText.style.color =
-                    "#ff6b6b";
-
-            }
-
-        }
-
-
-        function wait(
-            milliseconds
-        ) {
-
-            return new Promise(
-                resolve =>
-                    setTimeout(
-                        resolve,
-                        milliseconds
-                    )
-            );
-
-        }
-
-
-        startGame();
-
-    </script>
-
-
-    <!-- ==========================================
-         LOADING SCREEN STYLE
-         ========================================== -->
 
     <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+
+        html,
+        body {
+
+            width: 100%;
+            height: 100%;
+
+            overflow: hidden;
+
+            background: #071019;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            touch-action: none;
+
+            user-select: none;
+
+            -webkit-user-select: none;
+
+            -webkit-touch-callout: none;
+
+        }
+
+
+        body {
+
+            position: relative;
+
+        }
+
+
+        canvas {
+
+            display: block;
+
+            position: fixed;
+
+            inset: 0;
+
+            width: 100%;
+            height: 100%;
+
+            z-index: 1;
+
+        }
+
+
+        /* =========================================
+           LOADING SCREEN
+        ========================================= */
 
         #loading-screen {
 
@@ -245,28 +90,28 @@
 
             inset: 0;
 
-            z-index: 99999;
+            z-index: 9999;
 
             display: flex;
 
-            align-items: center;
+            flex-direction: column;
 
             justify-content: center;
+
+            align-items: center;
 
             background:
                 radial-gradient(
                     circle at center,
-                    #25343b 0%,
-                    #10181d 45%,
-                    #050709 100%
+                    #172b35 0%,
+                    #071019 65%,
+                    #03070a 100%
                 );
 
             color: white;
 
-            opacity: 1;
-
             transition:
-                opacity 0.7s ease;
+                opacity 0.5s ease;
 
         }
 
@@ -280,58 +125,57 @@
         }
 
 
-        .loading-box {
-
-            width:
-                min(430px, 88vw);
-
-            padding: 30px;
-
-            text-align: center;
-
-        }
-
-
         .game-logo {
 
-            font-family:
-                Arial,
-                Helvetica,
-                sans-serif;
-
-            font-size:
-                clamp(
-                    34px,
-                    9vw,
-                    62px
-                );
+            font-size: clamp(
+                42px,
+                10vw,
+                90px
+            );
 
             font-weight: 900;
 
-            letter-spacing: 5px;
+            letter-spacing: 8px;
+
+            text-align: center;
 
             text-shadow:
-                0 4px 25px
-                rgba(0, 0, 0, 0.6);
+                0 0 15px
+                rgba(255,255,255,0.25),
+                0 8px 30px
+                rgba(0,0,0,0.7);
 
         }
 
 
-        .loading-subtitle {
+        .game-subtitle {
 
             margin-top: 10px;
 
-            color:
-                rgba(
-                    255,
-                    255,
-                    255,
-                    0.65
-                );
+            color: rgba(
+                255,
+                255,
+                255,
+                0.65
+            );
 
-            font-size: 11px;
+            font-size: 13px;
 
-            letter-spacing: 2px;
+            letter-spacing: 4px;
+
+            text-transform: uppercase;
+
+        }
+
+
+        .loading-container {
+
+            width: min(
+                300px,
+                75vw
+            );
+
+            margin-top: 35px;
 
         }
 
@@ -341,8 +185,6 @@
             width: 100%;
 
             height: 7px;
-
-            margin-top: 30px;
 
             overflow: hidden;
 
@@ -365,65 +207,803 @@
 
             height: 100%;
 
-            border-radius: 20px;
+            border-radius: inherit;
 
-            background:
-                linear-gradient(
-                    90deg,
-                    #52d273,
-                    #a6ffb5
-                );
+            background: #ffffff;
 
             transition:
-                width 0.3s ease;
+                width 0.25s ease;
 
         }
 
 
         #loading-text {
 
-            margin-top: 13px;
+            margin-top: 10px;
+
+            text-align: center;
 
             color:
                 rgba(
                     255,
                     255,
                     255,
-                    0.75
+                    0.65
                 );
 
-            font-size: 13px;
+            font-size: 12px;
 
         }
 
+
+        /* =========================================
+           START SCREEN
+        ========================================= */
+
+        #start-screen {
+
+            position: fixed;
+
+            inset: 0;
+
+            z-index: 9000;
+
+            display: none;
+
+            justify-content: center;
+
+            align-items: center;
+
+            background:
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.45
+                );
+
+            backdrop-filter:
+                blur(3px);
+
+        }
+
+
+        #start-screen.active {
+
+            display: flex;
+
+        }
+
+
+        .start-card {
+
+            width: min(
+                420px,
+                90vw
+            );
+
+            padding: 30px;
+
+            border-radius: 22px;
+
+            text-align: center;
+
+            background:
+                rgba(
+                    8,
+                    15,
+                    20,
+                    0.88
+                );
+
+            border:
+                1px solid
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.12
+                );
+
+            box-shadow:
+                0 20px 60px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.5
+                );
+
+            color: white;
+
+        }
+
+
+        .start-card h1 {
+
+            font-size: 34px;
+
+            margin-bottom: 8px;
+
+        }
+
+
+        .start-card p {
+
+            color:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.65
+                );
+
+            line-height: 1.5;
+
+            font-size: 14px;
+
+            margin-bottom: 22px;
+
+        }
+
+
+        #start-game {
+
+            width: 100%;
+
+            padding: 14px 20px;
+
+            border: 0;
+
+            border-radius: 14px;
+
+            background: #ffffff;
+
+            color: #101010;
+
+            font-size: 16px;
+
+            font-weight: 800;
+
+            cursor: pointer;
+
+        }
+
+
+        #start-game:active {
+
+            transform: scale(0.97);
+
+        }
+
+
+        /* =========================================
+           CROSSHAIR
+        ========================================= */
+
+        #crosshair {
+
+            position: fixed;
+
+            left: 50%;
+            top: 50%;
+
+            width: 18px;
+            height: 18px;
+
+            transform:
+                translate(
+                    -50%,
+                    -50%
+                );
+
+            z-index: 50;
+
+            pointer-events: none;
+
+        }
+
+
+        #crosshair::before,
+        #crosshair::after {
+
+            content: "";
+
+            position: absolute;
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.85
+                );
+
+        }
+
+
+        #crosshair::before {
+
+            width: 18px;
+
+            height: 2px;
+
+            left: 0;
+
+            top: 8px;
+
+        }
+
+
+        #crosshair::after {
+
+            width: 2px;
+
+            height: 18px;
+
+            left: 8px;
+
+            top: 0;
+
+        }
+
+
+        /* =========================================
+           TOP RIGHT
+        ========================================= */
+
+        #game-top-buttons {
+
+            position: fixed;
+
+            top: 15px;
+
+            right: 15px;
+
+            z-index: 120;
+
+            display: flex;
+
+            gap: 8px;
+
+            pointer-events: auto;
+
+        }
+
+
+        .top-button {
+
+            width: 42px;
+
+            height: 42px;
+
+            border: 1px solid
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.12
+                );
+
+            border-radius: 13px;
+
+            background:
+                rgba(
+                    8,
+                    14,
+                    19,
+                    0.72
+                );
+
+            color: white;
+
+            font-size: 18px;
+
+            cursor: pointer;
+
+            backdrop-filter:
+                blur(8px);
+
+        }
+
+
+        /* =========================================
+           ERROR BOX
+        ========================================= */
+
+        #game-error {
+
+            position: fixed;
+
+            inset: 20px;
+
+            z-index: 10000;
+
+            display: none;
+
+            padding: 25px;
+
+            overflow: auto;
+
+            border-radius: 18px;
+
+            background:
+                #120b0b;
+
+            border:
+                1px solid
+                rgba(
+                    255,
+                    80,
+                    80,
+                    0.35
+                );
+
+            color: white;
+
+        }
+
+
+        #game-error h2 {
+
+            margin-bottom: 12px;
+
+        }
+
+
+        #game-error pre {
+
+            margin-top: 15px;
+
+            padding: 12px;
+
+            overflow: auto;
+
+            white-space: pre-wrap;
+
+            background:
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.4
+                );
+
+            border-radius: 10px;
+
+            color:
+                #ffb3b3;
+
+            font-size: 12px;
+
+        }
+
+
+        /* =========================================
+           MOBILE
+        ========================================= */
 
         @media (
             max-width: 600px
         ) {
 
-            .loading-box {
+            #crosshair {
 
-                padding: 20px;
-
-            }
-
-
-            .game-logo {
-
-                letter-spacing: 3px;
+                display: none;
 
             }
 
 
-            .loading-subtitle {
+            #game-top-buttons {
 
-                font-size: 8px;
+                top: 8px;
+
+                right: 8px;
+
+            }
+
+
+            .top-button {
+
+                width: 38px;
+
+                height: 38px;
+
+                font-size: 16px;
+
+            }
+
+
+            .start-card {
+
+                padding: 24px;
+
+            }
+
+
+            .start-card h1 {
+
+                font-size: 28px;
+
+            }
+
+        }
+
+
+        /* =========================================
+           LANDSCAPE
+        ========================================= */
+
+        @media (
+            orientation: landscape
+        ) and (
+            max-height: 500px
+        ) {
+
+            #game-top-buttons {
+
+                top: 7px;
+
+                right: 7px;
 
             }
 
         }
 
     </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- =========================================
+         LOADING SCREEN
+    ========================================= -->
+
+    <div id="loading-screen">
+
+        <div class="game-logo">
+            PET WORLD
+        </div>
+
+        <div class="game-subtitle">
+            Open World Pet Adventure
+        </div>
+
+        <div class="loading-container">
+
+            <div class="loading-bar">
+
+                <div
+                    id="loading-progress"
+                ></div>
+
+            </div>
+
+            <div id="loading-text">
+                Loading world...
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         START SCREEN
+    ========================================= -->
+
+    <div id="start-screen">
+
+        <div class="start-card">
+
+            <h1>
+                PET WORLD
+            </h1>
+
+            <p>
+                Explore a huge open world,
+                discover wild creatures,
+                capture them and build your
+                own powerful pet team.
+            </p>
+
+            <button
+                id="start-game"
+                type="button"
+            >
+                ENTER WORLD
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================
+         TOP BUTTONS
+    ========================================= -->
+
+    <div id="game-top-buttons">
+
+        <button
+            class="top-button"
+            id="inventory-button"
+            type="button"
+            aria-label="Inventory"
+        >
+            🎒
+        </button>
+
+        <button
+            class="top-button"
+            id="map-button"
+            type="button"
+            aria-label="Map"
+        >
+            🗺️
+        </button>
+
+        <button
+            class="top-button"
+            id="settings-button"
+            type="button"
+            aria-label="Settings"
+        >
+            ⚙️
+        </button>
+
+    </div>
+
+
+    <!-- =========================================
+         CROSSHAIR
+    ========================================= -->
+
+    <div id="crosshair"></div>
+
+
+    <!-- =========================================
+         GAME ERROR
+    ========================================= -->
+
+    <div id="game-error">
+
+        <h2>
+            PET WORLD ERROR
+        </h2>
+
+        <p>
+            Game start nahi ho saka.
+        </p>
+
+        <pre id="game-error-message"></pre>
+
+    </div>
+
+
+    <!-- =========================================
+         MAIN GAME
+    ========================================= -->
+
+    <script>
+
+        window.PET_WORLD_CONFIG = {
+
+            gameName:
+                "PET WORLD",
+
+            version:
+                "1.0.0",
+
+            mobile:
+                true,
+
+            shadows:
+                true,
+
+            maxPixelRatio:
+                1.5
+
+        };
+
+
+        // Loading progress
+
+        window.setLoadingProgress =
+            function (
+                percent,
+                text
+            ) {
+
+                const progress =
+                    document.getElementById(
+                        "loading-progress"
+                    );
+
+
+                const loadingText =
+                    document.getElementById(
+                        "loading-text"
+                    );
+
+
+                if (
+                    progress
+                ) {
+
+                    progress.style.width =
+                        `${Math.max(
+                            0,
+                            Math.min(
+                                100,
+                                percent
+                            )
+                        )}%`;
+
+                }
+
+
+                if (
+                    loadingText &&
+                    text
+                ) {
+
+                    loadingText.textContent =
+                        text;
+
+                }
+
+            };
+
+
+        // Global error handler
+
+        window.addEventListener(
+            "error",
+            function (
+                event
+            ) {
+
+                console.error(
+                    event.error ||
+                    event.message
+                );
+
+            }
+        );
+
+
+        window.addEventListener(
+            "unhandledrejection",
+            function (
+                event
+            ) {
+
+                console.error(
+                    event.reason
+                );
+
+            }
+        );
+
+    </script>
+
+
+    <!-- IMPORTANT:
+         main.js must be inside public/js/
+    -->
+
+    <script
+        type="module"
+        src="./js/main.js"
+    ></script>
+
+
+    <!-- =========================================
+         BASIC UI EVENTS
+    ========================================= -->
+
+    <script>
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            function () {
+
+                window.setLoadingProgress(
+                    15,
+                    "Starting game..."
+                );
+
+
+                const startButton =
+                    document.getElementById(
+                        "start-game"
+                    );
+
+
+                if (
+                    startButton
+                ) {
+
+                    startButton.addEventListener(
+                        "click",
+                        function () {
+
+                            const startScreen =
+                                document.getElementById(
+                                    "start-screen"
+                                );
+
+
+                            if (
+                                startScreen
+                            ) {
+
+                                startScreen.classList
+                                    .remove(
+                                        "active"
+                                    );
+
+                            }
+
+
+                            if (
+                                window.petWorldGame &&
+                                typeof
+                                window.petWorldGame
+                                    .resume ===
+                                "function"
+                            ) {
+
+                                window.petWorldGame
+                                    .resume();
+
+                            }
+
+                        }
+                    );
+
+                }
+
+
+                window.setLoadingProgress(
+                    100,
+                    "World ready!"
+                );
+
+
+                setTimeout(
+                    function () {
+
+                        const loading =
+                            document.getElementById(
+                                "loading-screen"
+                            );
+
+
+                        if (
+                            loading
+                        ) {
+
+                            loading.classList
+                                .add(
+                                    "hidden"
+                                );
+
+                        }
+
+                    },
+                    700
+                );
+
+            }
+        );
+
+    </script>
+
 
 </body>
 
