@@ -1,10 +1,12 @@
 {
   "name": "pet-world",
   "version": "1.0.0",
-  "description": "Open World Creature Capture Survival Game",
+  "description": "Pet World 3D Survival Game",
+  "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "dependencies": {
     "express": "^5.1.0",
