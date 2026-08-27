@@ -1,1363 +1,148 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+// ============================================================
+// PET WORLD
+// main.js
+// Main Application Bootstrap / Game Launcher
+// ============================================================
 
-import { World } from "./world.js";
-import { Player } from "./player.js";
-import { Creatures } from "./creatures.js";
-import { GameSystems } from "./systems.js";
-import { MobileControls } from "./mobile.js";
+import { Game } from "./game.js";
 
+// ============================================================
+// GLOBAL GAME STATE
+// ============================================================
 
-class PetWorldGame {
+let game = null;
 
-    constructor() {
+let bootStarted = false;
 
-        // =============================================
-        // CORE
-        // =============================================
+let pageVisible = true;
 
-        this.scene = null;
-
-        this.camera = null;
-
-        this.renderer = null;
-
-        this.clock =
-            new THREE.Clock();
-
-        this.elapsed = 0;
-
-        this.running = false;
+let lastError = null;
 
 
-        // =============================================
-        // GAME SYSTEMS
-        // =============================================
+// ============================================================
+// DOM READY
+// ============================================================
 
-        this.world = null;
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-        this.player = null;
+        startApplication();
 
-        this.creatures = null;
+    },
+    {
+        once: true
+    }
+);
 
-        this.systems = null;
 
-        this.mobile = null;
+// ============================================================
+// START APPLICATION
+// ============================================================
 
+async function startApplication() {
 
-        // =============================================
-        // UI
-        // =============================================
+    if (bootStarted) {
 
-        this.ui = {
-
-            notify: message => {
-
-                this.showNotification(
-                    message
-                );
-
-            }
-
-        };
+        return;
 
     }
 
+    bootStarted = true;
 
-    // =================================================
-    // START
-    // =================================================
 
-    async start() {
+    try {
 
-        try {
+        prepareDocument();
 
-            this.createScene();
+        disableBrowserBehaviors();
 
-            this.createCamera();
+        setupVisibilityHandling();
 
-            this.createRenderer();
+        setupGlobalErrorHandling();
 
-            this.createLighting();
+        setupGlobalShortcuts();
 
-            this.setupResize();
+        showLoadingScreen(
+            "Loading PET WORLD..."
+        );
 
-            this.createGameSystems();
 
-            await this.initializeSystems();
+        await waitForBrowserReady();
 
-            this.createInitialUI();
 
-            this.running = true;
+        updateLoadingProgress(
+            20,
+            "Creating game..."
+        );
 
-            this.animate();
 
-        } catch (
+        game =
+            new Game();
+
+
+        // Global access for debugging
+        // and other modules.
+
+        window.petWorldGame =
+            game;
+
+
+        updateLoadingProgress(
+            40,
+            "Initializing world..."
+        );
+
+
+        await game.init();
+
+
+        updateLoadingProgress(
+            100,
+            "PET WORLD ready!"
+        );
+
+
+        await sleep(
+            350
+        );
+
+
+        hideLoadingScreen();
+
+
+        console.log(
+            "========================================"
+        );
+
+        console.log(
+            "PET WORLD started successfully."
+        );
+
+        console.log(
+            "Game object:",
+            game
+        );
+
+        console.log(
+            "========================================"
+        );
+
+
+    } catch (error) {
+
+        lastError =
+            error;
+
+
+        console.error(
+            "PET WORLD initialization failed:",
             error
-        ) {
-
-            console.error(
-                "Game startup failed:",
-                error
-            );
-
-            this.showFatalError(
-                error
-            );
-
-        }
-
-    }
-
-
-    // =================================================
-    // SCENE
-    // =================================================
-
-    createScene() {
-
-        this.scene =
-            new THREE.Scene();
-
-
-        this.scene.background =
-            new THREE.Color(
-                0x87b6d9
-            );
-
-
-        this.scene.fog =
-            new THREE.Fog(
-                0x87b6d9,
-                80,
-                350
-            );
-
-
-        this.scene.name =
-            "PET_WORLD_SCENE";
-
-    }
-
-
-    // =================================================
-    // CAMERA
-    // =================================================
-
-    createCamera() {
-
-        const aspect =
-            window.innerWidth /
-            Math.max(
-                1,
-                window.innerHeight
-            );
-
-
-        this.camera =
-            new THREE.PerspectiveCamera(
-                65,
-                aspect,
-                0.1,
-                700
-            );
-
-
-        this.camera.position.set(
-            0,
-            5,
-            8
-        );
-
-    }
-
-
-    // =================================================
-    // RENDERER
-    // =================================================
-
-    createRenderer() {
-
-        this.renderer =
-            new THREE.WebGLRenderer({
-
-                antialias:
-                    window.devicePixelRatio <
-                    1.5,
-
-                powerPreference:
-                    "high-performance"
-
-            });
-
-
-        this.renderer.setPixelRatio(
-            Math.min(
-                window.devicePixelRatio || 1,
-                1.5
-            )
         );
 
 
-        this.renderer.setSize(
-            window.innerWidth,
-            window.innerHeight
-        );
-
-
-        this.renderer.shadowMap.enabled =
-            true;
-
-
-        this.renderer.shadowMap.type =
-            THREE.PCFSoftShadowMap;
-
-
-        this.renderer.outputColorSpace =
-            THREE.SRGBColorSpace;
-
-
-        this.renderer.toneMapping =
-            THREE.ACESFilmicToneMapping;
-
-
-        this.renderer.toneMappingExposure =
-            1;
-
-
-        this.renderer.domElement.id =
-            "game-canvas";
-
-
-        document.body.appendChild(
-            this.renderer.domElement
-        );
-
-    }
-
-
-    // =================================================
-    // BASIC LIGHTING
-    // =================================================
-
-    createLighting() {
-
-        const light =
-            new THREE.HemisphereLight(
-                0xbfdcff,
-                0x26321e,
-                0.8
-            );
-
-
-        this.scene.add(
-            light
-        );
-
-    }
-
-
-    // =================================================
-    // CREATE SYSTEM OBJECTS
-    // =================================================
-
-    createGameSystems() {
-
-        this.world =
-            new World(
-                this
-            );
-
-
-        this.player =
-            new Player(
-                this
-            );
-
-
-        this.creatures =
-            new Creatures(
-                this
-            );
-
-
-        this.systems =
-            new GameSystems(
-                this
-            );
-
-
-        this.mobile =
-            new MobileControls(
-                this
-            );
-
-    }
-
-
-    // =================================================
-    // INITIALIZE SYSTEMS
-    // =================================================
-
-    async initializeSystems() {
-
-        await this.systems.init();
-
-        await this.world.init();
-
-        await this.player.init();
-
-        await this.creatures.init();
-
-        await this.mobile.init();
-
-    }
-
-
-    // =================================================
-    // RESIZE
-    // =================================================
-
-    setupResize() {
-
-        window.addEventListener(
-            "resize",
-            () => {
-
-                this.resize();
-
-            }
-        );
-
-    }
-
-
-    resize() {
-
-        if (
-            !this.camera ||
-            !this.renderer
-        ) {
-
-            return;
-
-        }
-
-
-        this.camera.aspect =
-            window.innerWidth /
-            Math.max(
-                1,
-                window.innerHeight
-            );
-
-
-        this.camera.updateProjectionMatrix();
-
-
-        this.renderer.setSize(
-            window.innerWidth,
-            window.innerHeight
-        );
-
-    }
-
-
-    // =================================================
-    // GAME LOOP
-    // =================================================
-
-    animate() {
-
-        if (
-            !this.running
-        ) {
-
-            return;
-
-        }
-
-
-        requestAnimationFrame(
-            () => this.animate()
-        );
-
-
-        const rawDelta =
-            this.clock.getDelta();
-
-
-        const delta =
-            Math.min(
-                rawDelta,
-                0.05
-            );
-
-
-        this.elapsed +=
-            delta;
-
-
-        this.update(
-            delta
-        );
-
-
-        this.render();
-
-    }
-
-
-    // =================================================
-    // UPDATE
-    // =================================================
-
-    update(
-        delta
-    ) {
-
-        try {
-
-            if (
-                this.systems
-            ) {
-
-                this.systems.update(
-                    delta
-                );
-
-            }
-
-
-            if (
-                this.world
-            ) {
-
-                this.world.update(
-                    delta
-                );
-
-            }
-
-
-            if (
-                this.player
-            ) {
-
-                this.player.update(
-                    delta
-                );
-
-            }
-
-
-            if (
-                this.creatures
-            ) {
-
-                this.creatures.update(
-                    delta
-                );
-
-            }
-
-
-            if (
-                this.mobile
-            ) {
-
-                this.mobile.update(
-                    delta
-                );
-
-            }
-
-
-            this.updateHUD();
-
-        } catch (
+        showFatalError(
             error
-        ) {
-
-            console.error(
-                "Game update error:",
-                error
-            );
-
-        }
-
-    }
-
-
-    // =================================================
-    // RENDER
-    // =================================================
-
-    render() {
-
-        if (
-            !this.renderer ||
-            !this.scene ||
-            !this.camera
-        ) {
-
-            return;
-
-        }
-
-
-        this.renderer.render(
-            this.scene,
-            this.camera
-        );
-
-    }
-
-
-    // =================================================
-    // INITIAL UI
-    // =================================================
-
-    createInitialUI() {
-
-        let hud =
-            document.getElementById(
-                "game-hud"
-            );
-
-
-        if (
-            hud
-        ) {
-
-            return;
-
-        }
-
-
-        hud =
-            document.createElement(
-                "div"
-            );
-
-
-        hud.id =
-            "game-hud";
-
-
-        hud.innerHTML = `
-
-            <div class="hud-panel">
-
-                <div class="hud-row">
-
-                    <span>
-                        ❤️
-                    </span>
-
-                    <div class="bar">
-
-                        <div
-                            id="health-bar"
-                            class="bar-fill"
-                        ></div>
-
-                    </div>
-
-                    <span
-                        id="health-text"
-                    >
-                        100
-                    </span>
-
-                </div>
-
-
-                <div class="hud-row">
-
-                    <span>
-                        ⚡
-                    </span>
-
-                    <div class="bar">
-
-                        <div
-                            id="stamina-bar"
-                            class="bar-fill"
-                        ></div>
-
-                    </div>
-
-                    <span
-                        id="stamina-text"
-                    >
-                        100
-                    </span>
-
-                </div>
-
-
-                <div class="hud-row">
-
-                    <span>
-                        🍖
-                    </span>
-
-                    <div class="bar">
-
-                        <div
-                            id="hunger-bar"
-                            class="bar-fill"
-                        ></div>
-
-                    </div>
-
-                    <span
-                        id="hunger-text"
-                    >
-                        100
-                    </span>
-
-                </div>
-
-
-                <div class="level-text">
-
-                    LEVEL
-                    <strong id="level-value">
-                        1
-                    </strong>
-
-                </div>
-
-
-                <div class="pet-text">
-
-                    🐾 PETS:
-                    <strong id="pet-count">
-                        0
-                    </strong>
-
-                </div>
-
-            </div>
-
-
-            <div
-                id="notification-container"
-            ></div>
-
-        `;
-
-
-        document.body.appendChild(
-            hud
-        );
-
-
-        this.injectHUDStyles();
-
-    }
-
-
-    // =================================================
-    // HUD UPDATE
-    // =================================================
-
-    updateHUD() {
-
-        if (
-            !this.player ||
-            !this.systems
-        ) {
-
-            return;
-
-        }
-
-
-        const healthBar =
-            document.getElementById(
-                "health-bar"
-            );
-
-
-        const staminaBar =
-            document.getElementById(
-                "stamina-bar"
-            );
-
-
-        const hungerBar =
-            document.getElementById(
-                "hunger-bar"
-            );
-
-
-        const healthText =
-            document.getElementById(
-                "health-text"
-            );
-
-
-        const staminaText =
-            document.getElementById(
-                "stamina-text"
-            );
-
-
-        const hungerText =
-            document.getElementById(
-                "hunger-text"
-            );
-
-
-        const levelValue =
-            document.getElementById(
-                "level-value"
-            );
-
-
-        const petCount =
-            document.getElementById(
-                "pet-count"
-            );
-
-
-        if (
-            healthBar
-        ) {
-
-            healthBar.style.width =
-                `${this.getPercent(
-                    this.player.health,
-                    this.player.maxHealth
-                )}%`;
-
-        }
-
-
-        if (
-            staminaBar
-        ) {
-
-            staminaBar.style.width =
-                `${this.getPercent(
-                    this.player.stamina,
-                    this.player.maxStamina
-                )}%`;
-
-        }
-
-
-        if (
-            hungerBar
-        ) {
-
-            hungerBar.style.width =
-                `${this.getPercent(
-                    this.player.hunger,
-                    this.player.maxHunger
-                )}%`;
-
-        }
-
-
-        if (
-            healthText
-        ) {
-
-            healthText.textContent =
-                Math.round(
-                    this.player.health
-                );
-
-        }
-
-
-        if (
-            staminaText
-        ) {
-
-            staminaText.textContent =
-                Math.round(
-                    this.player.stamina
-                );
-
-        }
-
-
-        if (
-            hungerText
-        ) {
-
-            hungerText.textContent =
-                Math.round(
-                    this.player.hunger
-                );
-
-        }
-
-
-        if (
-            levelValue
-        ) {
-
-            levelValue.textContent =
-                this.systems.level;
-
-        }
-
-
-        if (
-            petCount
-        ) {
-
-            petCount.textContent =
-                this.systems.pets.length;
-
-        }
-
-    }
-
-
-    // =================================================
-    // PERCENT
-    // =================================================
-
-    getPercent(
-        value,
-        max
-    ) {
-
-        if (
-            !Number.isFinite(value) ||
-            !Number.isFinite(max) ||
-            max <= 0
-        ) {
-
-            return 0;
-
-        }
-
-
-        return Math.max(
-            0,
-            Math.min(
-                100,
-                (
-                    value /
-                    max
-                ) *
-                100
-            )
-        );
-
-    }
-
-
-    // =================================================
-    // NOTIFICATION
-    // =================================================
-
-    showNotification(
-        message
-    ) {
-
-        let container =
-            document.getElementById(
-                "notification-container"
-            );
-
-
-        if (
-            !container
-        ) {
-
-            container =
-                document.createElement(
-                    "div"
-                );
-
-            container.id =
-                "notification-container";
-
-            document.body.appendChild(
-                container
-            );
-
-        }
-
-
-        const notification =
-            document.createElement(
-                "div"
-            );
-
-
-        notification.className =
-            "game-notification";
-
-
-        notification.textContent =
-            String(
-                message
-            );
-
-
-        container.appendChild(
-            notification
-        );
-
-
-        setTimeout(
-            () => {
-
-                notification.style.opacity =
-                    "0";
-
-
-                notification.style.transform =
-                    "translateY(-10px)";
-
-
-                setTimeout(
-                    () => {
-
-                        notification.remove();
-
-                    },
-                    250
-                );
-
-            },
-            2200
-        );
-
-    }
-
-
-    // =================================================
-    // FATAL ERROR
-    // =================================================
-
-    showFatalError(
-        error
-    ) {
-
-        const message =
-            error &&
-            error.message
-                ? error.message
-                : "Unknown error";
-
-
-        const box =
-            document.createElement(
-                "div"
-            );
-
-
-        box.style.position =
-            "fixed";
-
-
-        box.style.inset =
-            "20px";
-
-
-        box.style.zIndex =
-            "99999";
-
-
-        box.style.background =
-            "#111";
-
-
-        box.style.color =
-            "#fff";
-
-
-        box.style.padding =
-            "25px";
-
-
-        box.style.fontFamily =
-            "Arial, sans-serif";
-
-
-        box.style.borderRadius =
-            "15px";
-
-
-        box.innerHTML = `
-
-            <h2>
-                PET WORLD ERROR
-            </h2>
-
-            <p>
-                Game start nahi ho saka.
-            </p>
-
-            <p>
-                ${this.escapeHTML(
-                    message
-                )}
-            </p>
-
-            <button
-                id="reload-game-button"
-            >
-                Reload Game
-            </button>
-
-        `;
-
-
-        document.body.appendChild(
-            box
-        );
-
-
-        const button =
-            document.getElementById(
-                "reload-game-button"
-            );
-
-
-        if (
-            button
-        ) {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    location.reload();
-
-                }
-            );
-
-        }
-
-    }
-
-
-    // =================================================
-    // ESCAPE HTML
-    // =================================================
-
-    escapeHTML(
-        text
-    ) {
-
-        const div =
-            document.createElement(
-                "div"
-            );
-
-
-        div.textContent =
-            String(text);
-
-
-        return div.innerHTML;
-
-    }
-
-
-    // =================================================
-    // HUD STYLES
-    // =================================================
-
-    injectHUDStyles() {
-
-        if (
-            document.getElementById(
-                "pet-world-hud-style"
-            )
-        ) {
-
-            return;
-
-        }
-
-
-        const style =
-            document.createElement(
-                "style"
-            );
-
-
-        style.id =
-            "pet-world-hud-style";
-
-
-        style.textContent = `
-
-            #game-hud {
-
-                position: fixed;
-
-                inset: 0;
-
-                z-index: 100;
-
-                pointer-events: none;
-
-                font-family:
-                    Arial,
-                    sans-serif;
-
-                color: white;
-
-            }
-
-
-            .hud-panel {
-
-                position: absolute;
-
-                top: 15px;
-
-                left: 15px;
-
-                width: 210px;
-
-                padding: 12px;
-
-                border-radius: 14px;
-
-                background:
-                    rgba(
-                        8,
-                        12,
-                        16,
-                        0.68
-                    );
-
-                backdrop-filter:
-                    blur(8px);
-
-                box-shadow:
-                    0 8px 30px
-                    rgba(
-                        0,
-                        0,
-                        0,
-                        0.35
-                    );
-
-            }
-
-
-            .hud-row {
-
-                display: flex;
-
-                align-items: center;
-
-                gap: 7px;
-
-                margin-bottom: 7px;
-
-                font-size: 13px;
-
-                font-weight: 700;
-
-            }
-
-
-            .bar {
-
-                flex: 1;
-
-                height: 9px;
-
-                overflow: hidden;
-
-                border-radius: 20px;
-
-                background:
-                    rgba(
-                        255,
-                        255,
-                        255,
-                        0.16
-                    );
-
-            }
-
-
-            .bar-fill {
-
-                width: 100%;
-
-                height: 100%;
-
-                border-radius: inherit;
-
-                transition:
-                    width 0.15s
-                    linear;
-
-            }
-
-
-            #health-bar {
-
-                background:
-                    #d94a4a;
-
-            }
-
-
-            #stamina-bar {
-
-                background:
-                    #4ca96b;
-
-            }
-
-
-            #hunger-bar {
-
-                background:
-                    #d99a43;
-
-            }
-
-
-            .level-text {
-
-                margin-top: 9px;
-
-                font-size: 14px;
-
-            }
-
-
-            .pet-text {
-
-                margin-top: 5px;
-
-                font-size: 13px;
-
-            }
-
-
-            #notification-container {
-
-                position: absolute;
-
-                top: 25px;
-
-                left: 50%;
-
-                transform:
-                    translateX(-50%);
-
-                display: flex;
-
-                flex-direction: column;
-
-                align-items: center;
-
-                gap: 7px;
-
-            }
-
-
-            .game-notification {
-
-                padding:
-                    9px 16px;
-
-                border-radius: 20px;
-
-                background:
-                    rgba(
-                        10,
-                        15,
-                        20,
-                        0.82
-                    );
-
-                border:
-                    1px solid
-                    rgba(
-                        255,
-                        255,
-                        255,
-                        0.12
-                    );
-
-                font-size: 13px;
-
-                font-weight: 700;
-
-                white-space: nowrap;
-
-                transition:
-                    opacity 0.25s,
-                    transform 0.25s;
-
-            }
-
-
-            @media (
-                max-width: 600px
-            ) {
-
-                .hud-panel {
-
-                    top: 8px;
-
-                    left: 8px;
-
-                    width: 165px;
-
-                    padding: 9px;
-
-                }
-
-
-                .hud-row {
-
-                    font-size: 11px;
-
-                    margin-bottom: 5px;
-
-                }
-
-
-                .bar {
-
-                    height: 7px;
-
-                }
-
-
-                .level-text {
-
-                    font-size: 12px;
-
-                }
-
-
-                .pet-text {
-
-                    font-size: 11px;
-
-                }
-
-            }
-
-        `;
-
-
-        document.head.appendChild(
-            style
         );
 
     }
@@ -1365,23 +150,1678 @@ class PetWorldGame {
 }
 
 
-// =====================================================
-// START GAME
-// =====================================================
+// ============================================================
+// PREPARE DOCUMENT
+// ============================================================
 
-window.addEventListener(
-    "DOMContentLoaded",
-    () => {
+function prepareDocument() {
 
-        const game =
-            new PetWorldGame();
-
-
-        window.petWorldGame =
-            game;
+    document.documentElement
+        .style
+        .margin = "0";
 
 
-        game.start();
+    document.documentElement
+        .style
+        .padding = "0";
+
+
+    document.body
+        .style
+        .margin = "0";
+
+
+    document.body
+        .style
+        .padding = "0";
+
+
+    document.body
+        .style
+        .overflow = "hidden";
+
+
+    document.body
+        .style
+        .width = "100vw";
+
+
+    document.body
+        .style
+        .height = "100vh";
+
+
+    document.body
+        .style
+        .background = "#101820";
+
+
+    document.body
+        .style
+        .touchAction = "none";
+
+
+    document.body
+        .style
+        .userSelect = "none";
+
+}
+
+
+// ============================================================
+// BROWSER BEHAVIOUR
+// ============================================================
+
+function disableBrowserBehaviors() {
+
+    // Prevent context menu inside game.
+
+    document.addEventListener(
+        "contextmenu",
+        event => {
+
+            if (
+                event.target.closest(
+                    "canvas"
+                )
+            ) {
+
+                event.preventDefault();
+
+            }
+
+        }
+    );
+
+
+    // Prevent accidental drag.
+
+    document.addEventListener(
+        "dragstart",
+        event => {
+
+            if (
+                event.target.closest(
+                    "canvas"
+                )
+            ) {
+
+                event.preventDefault();
+
+            }
+
+        }
+    );
+
+
+    // Prevent browser zoom with Ctrl + mouse wheel.
+
+    document.addEventListener(
+        "wheel",
+        event => {
+
+            if (
+                event.ctrlKey
+            ) {
+
+                event.preventDefault();
+
+            }
+
+        },
+        {
+            passive: false
+        }
+    );
+
+
+    // Prevent Ctrl +/- browser zoom.
+
+    document.addEventListener(
+        "keydown",
+        event => {
+
+            if (
+                event.ctrlKey &&
+                (
+                    event.code ===
+                    "Equal" ||
+
+                    event.code ===
+                    "Minus" ||
+
+                    event.code ===
+                    "NumpadAdd" ||
+
+                    event.code ===
+                    "NumpadSubtract"
+                )
+            ) {
+
+                event.preventDefault();
+
+            }
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// VISIBILITY
+// ============================================================
+
+function setupVisibilityHandling() {
+
+    document.addEventListener(
+        "visibilitychange",
+        () => {
+
+            pageVisible =
+                document.visibilityState ===
+                "visible";
+
+
+            if (
+                !game
+            ) {
+
+                return;
+
+            }
+
+
+            if (
+                !pageVisible
+            ) {
+
+                pauseGameForVisibility();
+
+            } else {
+
+                resumeGameForVisibility();
+
+            }
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// PAUSE WHEN TAB HIDDEN
+// ============================================================
+
+function pauseGameForVisibility() {
+
+    try {
+
+        if (
+            typeof game.stop ===
+            "function"
+        ) {
+
+            game.stop();
+
+        }
+
+
+        console.log(
+            "PET WORLD paused."
+        );
+
+
+    } catch (error) {
+
+        console.warn(
+            "Could not pause game:",
+            error
+        );
 
     }
-);
+
+}
+
+
+// ============================================================
+// RESUME WHEN TAB VISIBLE
+// ============================================================
+
+function resumeGameForVisibility() {
+
+    try {
+
+        if (
+            typeof game.start ===
+            "function"
+        ) {
+
+            game.start();
+
+        }
+
+
+        console.log(
+            "PET WORLD resumed."
+        );
+
+
+    } catch (error) {
+
+        console.warn(
+            "Could not resume game:",
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// GLOBAL ERROR HANDLING
+// ============================================================
+
+function setupGlobalErrorHandling() {
+
+    window.addEventListener(
+        "error",
+        event => {
+
+            console.error(
+                "Global error:",
+                event.error ||
+                event.message
+            );
+
+
+            if (
+                !game
+            ) {
+
+                return;
+
+            }
+
+
+            // Don't destroy the running game
+            // because of one non-fatal error.
+
+            if (
+                game.ui &&
+                typeof game.ui.notify ===
+                "function"
+            ) {
+
+                game.ui.notify(
+                    "⚠️ A game error occurred."
+                );
+
+            }
+
+        }
+    );
+
+
+    window.addEventListener(
+        "unhandledrejection",
+        event => {
+
+            console.error(
+                "Unhandled promise rejection:",
+                event.reason
+            );
+
+
+            if (
+                game &&
+                game.ui &&
+                typeof game.ui.notify ===
+                "function"
+            ) {
+
+                game.ui.notify(
+                    "⚠️ Something went wrong."
+                );
+
+            }
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// GLOBAL SHORTCUTS
+// ============================================================
+
+function setupGlobalShortcuts() {
+
+    window.addEventListener(
+        "keydown",
+        event => {
+
+            // Ignore shortcuts while typing.
+
+            const target =
+                event.target;
+
+
+            if (
+                target &&
+                (
+                    target.tagName ===
+                    "INPUT" ||
+
+                    target.tagName ===
+                    "TEXTAREA" ||
+
+                    target.isContentEditable
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            // ------------------------------------------------
+            // F11
+            // ------------------------------------------------
+
+            if (
+                event.code ===
+                "F11"
+            ) {
+
+                event.preventDefault();
+
+                toggleFullscreen();
+
+            }
+
+
+            // ------------------------------------------------
+            // ESC
+            // ------------------------------------------------
+
+            if (
+                event.code ===
+                "Escape"
+            ) {
+
+                handleEscape();
+
+            }
+
+
+            // ------------------------------------------------
+            // I = INVENTORY
+            // ------------------------------------------------
+
+            if (
+                event.code ===
+                "KeyI"
+            ) {
+
+                if (
+                    game &&
+                    game.ui
+                ) {
+
+                    game.ui.toggleInventory();
+
+                }
+
+            }
+
+
+            // ------------------------------------------------
+            // P = PETS
+            // ------------------------------------------------
+
+            if (
+                event.code ===
+                "KeyP"
+            ) {
+
+                if (
+                    game &&
+                    game.ui
+                ) {
+
+                    game.ui.togglePets();
+
+                }
+
+            }
+
+
+            // ------------------------------------------------
+            // M = MAP
+            // ------------------------------------------------
+
+            if (
+                event.code ===
+                "KeyM"
+            ) {
+
+                if (
+                    game &&
+                    game.ui
+                ) {
+
+                    game.ui.toggleMap();
+
+                }
+
+            }
+
+
+            // ------------------------------------------------
+            // O = SETTINGS
+            // ------------------------------------------------
+
+            if (
+                event.code ===
+                "KeyO"
+            ) {
+
+                if (
+                    game &&
+                    game.ui
+                ) {
+
+                    game.ui.toggleSettings();
+
+                }
+
+            }
+
+
+            // ------------------------------------------------
+            // F = FOOD
+            // ------------------------------------------------
+
+            if (
+                event.code ===
+                "KeyF"
+            ) {
+
+                if (
+                    game &&
+                    game.systems &&
+                    game.player
+                ) {
+
+                    game.systems
+                        .useHealingFood();
+
+                }
+
+            }
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// ESCAPE HANDLER
+// ============================================================
+
+function handleEscape() {
+
+    if (
+        !game
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        game.ui
+    ) {
+
+        game.ui.closeAll();
+
+    }
+
+
+    if (
+        document.pointerLockElement
+    ) {
+
+        try {
+
+            document.exitPointerLock();
+
+        } catch (error) {
+
+            console.warn(
+                "Pointer lock exit failed:",
+                error
+            );
+
+        }
+
+    }
+
+}
+
+
+// ============================================================
+// FULLSCREEN
+// ============================================================
+
+async function toggleFullscreen() {
+
+    try {
+
+        if (
+            !document.fullscreenElement
+        ) {
+
+            await document.documentElement
+                .requestFullscreen();
+
+        } else {
+
+            await document.exitFullscreen();
+
+        }
+
+    } catch (error) {
+
+        console.warn(
+            "Fullscreen unavailable:",
+            error
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// BROWSER READY
+// ============================================================
+
+async function waitForBrowserReady() {
+
+    if (
+        document.readyState ===
+        "complete"
+    ) {
+
+        return;
+
+    }
+
+
+    await new Promise(
+        resolve => {
+
+            window.addEventListener(
+                "load",
+                resolve,
+                {
+                    once: true
+                }
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// LOADING SCREEN
+// ============================================================
+
+function showLoadingScreen(
+    message = "Loading..."
+) {
+
+    let loading =
+        document.getElementById(
+            "pet-world-loading"
+        );
+
+
+    if (
+        loading
+    ) {
+
+        loading.classList.remove(
+            "hidden"
+        );
+
+        return;
+
+    }
+
+
+    loading =
+        document.createElement(
+            "div"
+        );
+
+
+    loading.id =
+        "pet-world-loading";
+
+
+    loading.innerHTML = `
+
+        <div class="pet-loading-box">
+
+            <div class="pet-loading-logo">
+
+                🐾
+
+            </div>
+
+            <div class="pet-loading-title">
+
+                PET WORLD
+
+            </div>
+
+            <div
+                id="pet-loading-message"
+                class="pet-loading-message"
+            >
+
+                ${escapeHTML(message)}
+
+            </div>
+
+            <div class="pet-loading-progress">
+
+                <div
+                    id="pet-loading-progress-fill"
+                ></div>
+
+            </div>
+
+            <div
+                id="pet-loading-percent"
+                class="pet-loading-percent"
+            >
+
+                0%
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    document.body.appendChild(
+        loading
+    );
+
+
+    injectLoadingStyles();
+
+}
+
+
+// ============================================================
+// UPDATE LOADING
+// ============================================================
+
+function updateLoadingProgress(
+    percent,
+    message
+) {
+
+    const fill =
+        document.getElementById(
+            "pet-loading-progress-fill"
+        );
+
+
+    const percentText =
+        document.getElementById(
+            "pet-loading-percent"
+        );
+
+
+    const messageText =
+        document.getElementById(
+            "pet-loading-message"
+        );
+
+
+    const safePercent =
+        Math.max(
+            0,
+            Math.min(
+                100,
+                Number(percent) || 0
+            )
+        );
+
+
+    if (
+        fill
+    ) {
+
+        fill.style.width =
+            `${safePercent}%`;
+
+    }
+
+
+    if (
+        percentText
+    ) {
+
+        percentText.textContent =
+            `${Math.round(safePercent)}%`;
+
+    }
+
+
+    if (
+        messageText &&
+        message
+    ) {
+
+        messageText.textContent =
+            message;
+
+    }
+
+}
+
+
+// ============================================================
+// HIDE LOADING
+// ============================================================
+
+function hideLoadingScreen() {
+
+    const loading =
+        document.getElementById(
+            "pet-world-loading"
+        );
+
+
+    if (
+        !loading
+    ) {
+
+        return;
+
+    }
+
+
+    loading.classList.add(
+        "hidden"
+    );
+
+
+    setTimeout(
+        () => {
+
+            if (
+                loading &&
+                loading.parentNode
+            ) {
+
+                loading.remove();
+
+            }
+
+        },
+        500
+    );
+
+}
+
+
+// ============================================================
+// FATAL ERROR
+// ============================================================
+
+function showFatalError(
+    error
+) {
+
+    const old =
+        document.getElementById(
+            "pet-world-fatal-error"
+        );
+
+
+    if (
+        old
+    ) {
+
+        old.remove();
+
+    }
+
+
+    const box =
+        document.createElement(
+            "div"
+        );
+
+
+    box.id =
+        "pet-world-fatal-error";
+
+
+    const errorMessage =
+        error &&
+        error.message
+            ? error.message
+            : String(error);
+
+
+    box.innerHTML = `
+
+        <div class="pet-fatal-card">
+
+            <div class="pet-fatal-icon">
+
+                ⚠️
+
+            </div>
+
+            <h1>
+
+                PET WORLD
+
+            </h1>
+
+            <h2>
+
+                Game failed to start
+
+            </h2>
+
+            <p>
+
+                ${escapeHTML(
+                    errorMessage
+                )}
+
+            </p>
+
+            <div class="pet-fatal-actions">
+
+                <button
+                    id="pet-world-retry"
+                >
+                    🔄 RETRY
+                </button>
+
+                <button
+                    id="pet-world-reload"
+                >
+                    ↻ RELOAD
+                </button>
+
+            </div>
+
+            <details>
+
+                <summary>
+                    Technical information
+                </summary>
+
+                <pre>${escapeHTML(
+                    error &&
+                    error.stack
+                        ? error.stack
+                        : String(error)
+                )}</pre>
+
+            </details>
+
+        </div>
+
+    `;
+
+
+    document.body.appendChild(
+        box
+    );
+
+
+    const retry =
+        document.getElementById(
+            "pet-world-retry"
+        );
+
+
+    const reload =
+        document.getElementById(
+            "pet-world-reload"
+        );
+
+
+    if (
+        retry
+    ) {
+
+        retry.addEventListener(
+            "click",
+            () => {
+
+                box.remove();
+
+                bootStarted =
+                    false;
+
+                startApplication();
+
+            }
+        );
+
+    }
+
+
+    if (
+        reload
+    ) {
+
+        reload.addEventListener(
+            "click",
+            () => {
+
+                window.location.reload();
+
+            }
+        );
+
+    }
+
+
+    injectFatalStyles();
+
+}
+
+
+// ============================================================
+// LOADING CSS
+// ============================================================
+
+function injectLoadingStyles() {
+
+    if (
+        document.getElementById(
+            "pet-world-loading-style"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "pet-world-loading-style";
+
+
+    style.textContent = `
+
+        #pet-world-loading {
+
+            position: fixed;
+
+            inset: 0;
+
+            z-index: 100000;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            background:
+                radial-gradient(
+                    circle at center,
+                    #203b35 0%,
+                    #101820 55%,
+                    #070b0e 100%
+                );
+
+            color: white;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            opacity: 1;
+
+            transition:
+                opacity 0.45s ease;
+
+        }
+
+
+        #pet-world-loading.hidden {
+
+            opacity: 0;
+
+            pointer-events: none;
+
+        }
+
+
+        .pet-loading-box {
+
+            width:
+                min(
+                    420px,
+                    82vw
+                );
+
+            text-align: center;
+
+        }
+
+
+        .pet-loading-logo {
+
+            width: 90px;
+
+            height: 90px;
+
+            margin: 0 auto 18px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            border-radius: 25px;
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.08
+                );
+
+            border:
+                1px solid
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.14
+                );
+
+            font-size: 48px;
+
+            box-shadow:
+                0 20px 60px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.35
+                );
+
+            animation:
+                petLoadingPulse
+                1.6s
+                ease-in-out
+                infinite;
+
+        }
+
+
+        .pet-loading-title {
+
+            font-size: 30px;
+
+            font-weight: 900;
+
+            letter-spacing: 5px;
+
+            margin-bottom: 10px;
+
+        }
+
+
+        .pet-loading-message {
+
+            min-height: 20px;
+
+            color:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.65
+                );
+
+            font-size: 13px;
+
+            margin-bottom: 16px;
+
+        }
+
+
+        .pet-loading-progress {
+
+            height: 8px;
+
+            width: 100%;
+
+            overflow: hidden;
+
+            border-radius: 20px;
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.1
+                );
+
+        }
+
+
+        #pet-loading-progress-fill {
+
+            width: 0%;
+
+            height: 100%;
+
+            border-radius: 20px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    #67d17c,
+                    #b9f6c5
+                );
+
+            transition:
+                width 0.25s ease;
+
+        }
+
+
+        .pet-loading-percent {
+
+            margin-top: 9px;
+
+            font-size: 11px;
+
+            color:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.5
+                );
+
+        }
+
+
+        @keyframes petLoadingPulse {
+
+            0%,
+            100% {
+
+                transform:
+                    scale(1);
+
+            }
+
+            50% {
+
+                transform:
+                    scale(1.06);
+
+            }
+
+        }
+
+
+        @media (
+            max-width: 600px
+        ) {
+
+            .pet-loading-title {
+
+                font-size: 24px;
+
+                letter-spacing: 3px;
+
+            }
+
+
+            .pet-loading-logo {
+
+                width: 75px;
+
+                height: 75px;
+
+                font-size: 40px;
+
+            }
+
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+
+}
+
+
+// ============================================================
+// FATAL CSS
+// ============================================================
+
+function injectFatalStyles() {
+
+    if (
+        document.getElementById(
+            "pet-world-fatal-style"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    const style =
+        document.createElement(
+            "style"
+        );
+
+
+    style.id =
+        "pet-world-fatal-style";
+
+
+    style.textContent = `
+
+        #pet-world-fatal-error {
+
+            position: fixed;
+
+            inset: 0;
+
+            z-index: 200000;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            padding: 20px;
+
+            box-sizing: border-box;
+
+            background:
+                rgba(
+                    4,
+                    7,
+                    9,
+                    0.96
+                );
+
+            color: white;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+        }
+
+
+        .pet-fatal-card {
+
+            width:
+                min(
+                    620px,
+                    94vw
+                );
+
+            max-height:
+                90vh;
+
+            overflow-y: auto;
+
+            padding: 28px;
+
+            box-sizing: border-box;
+
+            border-radius: 20px;
+
+            background:
+                #121b20;
+
+            border:
+                1px solid
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.12
+                );
+
+            box-shadow:
+                0 30px 100px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.7
+                );
+
+            text-align: center;
+
+        }
+
+
+        .pet-fatal-icon {
+
+            font-size: 48px;
+
+            margin-bottom: 10px;
+
+        }
+
+
+        .pet-fatal-card h1 {
+
+            margin:
+                0 0 5px;
+
+            font-size: 28px;
+
+            letter-spacing: 3px;
+
+        }
+
+
+        .pet-fatal-card h2 {
+
+            margin:
+                0 0 15px;
+
+            font-size: 18px;
+
+        }
+
+
+        .pet-fatal-card p {
+
+            margin:
+                0 auto 20px;
+
+            max-width: 520px;
+
+            line-height: 1.5;
+
+            color:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.7
+                );
+
+            word-break: break-word;
+
+        }
+
+
+        .pet-fatal-actions {
+
+            display: flex;
+
+            justify-content: center;
+
+            gap: 10px;
+
+            margin-bottom: 20px;
+
+        }
+
+
+        .pet-fatal-actions button {
+
+            border: 0;
+
+            border-radius: 10px;
+
+            padding:
+                12px 18px;
+
+            cursor: pointer;
+
+            font-weight: 800;
+
+        }
+
+
+        #pet-world-retry {
+
+            background: white;
+
+            color: #111;
+
+        }
+
+
+        #pet-world-reload {
+
+            background:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.1
+                );
+
+            color: white;
+
+        }
+
+
+        .pet-fatal-card details {
+
+            text-align: left;
+
+            color:
+                rgba(
+                    255,
+                    255,
+                    255,
+                    0.6
+                );
+
+        }
+
+
+        .pet-fatal-card pre {
+
+            margin-top: 10px;
+
+            padding: 12px;
+
+            overflow: auto;
+
+            border-radius: 10px;
+
+            background:
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.35
+                );
+
+            font-size: 11px;
+
+            white-space: pre-wrap;
+
+            word-break: break-word;
+
+        }
+
+
+        @media (
+            max-width: 600px
+        ) {
+
+            .pet-fatal-card {
+
+                padding: 20px;
+
+            }
+
+
+            .pet-fatal-actions {
+
+                flex-direction: column;
+
+            }
+
+        }
+
+    `;
+
+
+    document.head.appendChild(
+        style
+    );
+
+}
+
+
+// ============================================================
+// UTILITY: SLEEP
+// ============================================================
+
+function sleep(
+    milliseconds
+) {
+
+    return new Promise(
+        resolve => {
+
+            setTimeout(
+                resolve,
+                milliseconds
+            );
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// UTILITY: HTML ESCAPE
+// ============================================================
+
+function escapeHTML(
+    value
+) {
+
+    const element =
+        document.createElement(
+            "div"
+        );
+
+
+    element.textContent =
+        String(value);
+
+
+    return element.innerHTML;
+
+}
+
+
+// ============================================================
+// DEBUG API
+// ============================================================
+
+window.PetWorld =
+    {
+
+        getGame() {
+
+            return game;
+
+        },
+
+
+        getLastError() {
+
+            return lastError;
+
+        },
+
+
+        restart() {
+
+            window.location.reload();
+
+        },
+
+
+        isRunning() {
+
+            return Boolean(
+                game &&
+                game.running
+            );
+
+        },
+
+
+        isPageVisible() {
+
+            return pageVisible;
+
+        }
+
+    };
+
+
+// ============================================================
+// END OF main.js
+// ============================================================
