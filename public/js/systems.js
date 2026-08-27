@@ -327,22 +327,26 @@ export class GameSystems {
             player.maxStamina += 3;
 
             player.stamina =
-                player.maxStamina;
+if (this.game && this.game.player) {
 
+    const player = this.game.player;
 
-            player.maxHunger += 2;
+    player.maxHealth += 5;
+    player.health = player.maxHealth;
 
-        }
+    player.maxStamina += 3;
+    player.stamina = player.maxStamina;
 
+    player.maxHunger += 2;
+}
 
-        this.notify(
-            `🎉 LEVEL ${this.level}!`
-        );
+this.notify(
+    "LEVEL " + this.level + "!"
+);
 
-
-        this.unlockAchievement(
-            "level_" + this.level
-        );
+this.unlockAchievement(
+    "level_" + this.level
+);
 
     }
 
