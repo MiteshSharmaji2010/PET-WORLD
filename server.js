@@ -1,229 +1,716 @@
-import express from "express";
-import http from "http";
-import { Server } from "socket.io";
-import path from "path";
-import { fileURLToPath } from "url";
+"use strict";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+/*
+=========================================================
+PET WORLD
+Render-ready Node.js + Express Server
+File: server.js
+=========================================================
+*/
+
+const express = require("express");
+const path = require("path");
+const compression = require("compression");
 
 const app = express();
-const server = http.createServer(app);
 
-const io = new Server(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
+/*
+=========================================================
+CONFIGURATION
+=========================================================
+*/
+
+const PORT = Number(process.env.PORT) || 10000;
+
+const HOST =
+    process.env.HOST ||
+    "0.0.0.0";
+
+const IS_PRODUCTION =
+    process.env.NODE_ENV === "production";
+
+const PUBLIC_DIR =
+    path.join(
+        __dirname,
+        "public"
+    );
+
+/*
+=========================================================
+EXPRESS CONFIGURATION
+=========================================================
+*/
+
+app.disable("x-powered-by");
+
+app.set(
+    "trust proxy",
+    1
+);
+
+app.use(
+    express.json({
+        limit: "1mb"
+    })
+);
+
+app.use(
+    express.urlencoded({
+        extended: true,
+        limit: "1mb"
+    })
+);
+
+/*
+=========================================================
+COMPRESSION
+=========================================================
+*/
+
+app.use(
+    compression({
+        threshold: 1024
+    })
+);
+
+/*
+=========================================================
+SECURITY HEADERS
+=========================================================
+*/
+
+app.use(
+    (req, res, next) => {
+
+        res.setHeader(
+            "X-Content-Type-Options",
+            "nosniff"
+        );
+
+        res.setHeader(
+            "X-Frame-Options",
+            "SAMEORIGIN"
+        );
+
+        res.setHeader(
+            "Referrer-Policy",
+            "strict-origin-when-cross-origin"
+        );
+
+        res.setHeader(
+            "Permissions-Policy",
+            "camera=(), microphone=(), geolocation=()"
+        );
+
+        next();
+
     }
-});
+);
 
-const PORT = process.env.PORT || 3000;
+/*
+=========================================================
+REQUEST LOGGER
+=========================================================
+*/
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(
+    (req, res, next) => {
+
+        const start =
+            Date.now();
+
+        res.on(
+            "finish",
+            () => {
+
+                const duration =
+                    Date.now() -
+                    start;
+
+                console.log(
+                    `${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`
+                );
+
+            }
+        );
+
+        next();
+
+    }
+);
+
+/*
+=========================================================
+HEALTH CHECK
+=========================================================
+*/
+
+app.get(
+    "/health",
+    (req, res) => {
+
+        res.status(200).json({
+
+            success: true,
+
+            status: "healthy",
+
+            service: "PET WORLD",
+
+            environment:
+                IS_PRODUCTION
+                    ? "production"
+                    : "development",
+
+            uptime:
+                Math.floor(
+                    process.uptime()
+                ),
+
+            timestamp:
+                new Date().toISOString()
+
+        });
+
+    }
+);
+
+/*
+=========================================================
+API STATUS
+=========================================================
+*/
+
+app.get(
+    "/api",
+    (req, res) => {
+
+        res.status(200).json({
+
+            success: true,
+
+            game:
+                "PET WORLD",
+
+            message:
+                "PET WORLD server is running.",
+
+            version:
+                "1.0.0"
+
+        });
+
+    }
+);
+
+/*
+=========================================================
+GAME CONFIG API
+=========================================================
+*/
+
+app.get(
+    "/api/config",
+    (req, res) => {
+
+        res.status(200).json({
+
+            success: true,
+
+            game: {
+
+                name:
+                    "PET WORLD",
+
+                version:
+                    "1.0.0",
+
+                maxPlayers:
+                    100,
+
+                worldSize:
+                    500,
+
+                multiplayer:
+                    false
+
+            }
+
+        });
+
+    }
+);
+
+/*
+=========================================================
+STATIC FILES
+=========================================================
+*/
 
 app.use(
     express.static(
-        path.join(__dirname, "public")
+        PUBLIC_DIR,
+        {
+            extensions: [
+                "html"
+            ],
+
+            maxAge:
+                IS_PRODUCTION
+                    ? "1d"
+                    : 0,
+
+            index:
+                "index.html",
+
+            redirect:
+                false
+        }
     )
 );
 
-app.get("/health", (req, res) => {
-    res.json({
-        status: "ok",
-        game: "PET WORLD",
-        version: "1.0.0",
-        players: io.engine.clientsCount
-    });
-});
+/*
+=========================================================
+FAVICON
+=========================================================
+*/
 
-app.get("*", (req, res) => {
-    res.sendFile(
-        path.join(
-            __dirname,
-            "public",
-            "index.html"
-        )
-    );
-});
+app.get(
+    "/favicon.ico",
+    (req, res) => {
 
-const players = new Map();
+        const favicon =
+            path.join(
+                PUBLIC_DIR,
+                "favicon.ico"
+            );
 
-io.on("connection", (socket) => {
+        res.sendFile(
+            favicon,
+            error => {
 
-    console.log(
-        `Player connected: ${socket.id}`
-    );
+                if (error) {
 
-    const player = {
-        id: socket.id,
-        name: `Player-${socket.id.slice(0, 5)}`,
-        x: 0,
-        y: 0,
-        z: 0,
-        rotation: 0,
-        level: 1,
-        health: 100
-    };
+                    res.status(
+                        204
+                    ).end();
 
-    players.set(
-        socket.id,
-        player
-    );
+                }
 
-    socket.emit(
-        "world:init",
-        {
-            id: socket.id,
-            players: Array.from(
-                players.values()
+            }
+        );
+
+    }
+);
+
+/*
+=========================================================
+ROBOTS
+=========================================================
+*/
+
+app.get(
+    "/robots.txt",
+    (req, res) => {
+
+        res.type(
+            "text/plain"
+        );
+
+        res.send(
+            "User-agent: *\nAllow: /\n"
+        );
+
+    }
+);
+
+/*
+=========================================================
+SPA FALLBACK
+=========================================================
+
+If a browser opens a route that does not directly
+exist, send index.html.
+
+This is useful for client-side game/menu routes.
+=========================================================
+*/
+
+app.get(
+    "*",
+    (req, res, next) => {
+
+        /*
+        Do not return index.html for API routes.
+        */
+
+        if (
+            req.path.startsWith(
+                "/api/"
             )
+        ) {
+
+            return next();
+
         }
-    );
 
-    socket.broadcast.emit(
-        "player:joined",
-        player
-    );
+        /*
+        Do not return index.html for
+        common missing asset requests.
+        */
 
-    socket.on(
-        "player:update",
-        (data) => {
+        const assetExtensions = [
 
-            const current =
-                players.get(
-                    socket.id
-                );
+            ".js",
+            ".mjs",
+            ".css",
+            ".json",
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".webp",
+            ".gif",
+            ".svg",
+            ".ico",
+            ".mp3",
+            ".wav",
+            ".ogg",
+            ".mp4",
+            ".webm",
+            ".glb",
+            ".gltf",
+            ".bin",
+            ".woff",
+            ".woff2",
+            ".ttf"
 
-            if (!current) {
-                return;
-            }
+        ];
 
-            if (
-                data &&
-                typeof data === "object"
-            ) {
-
-                if (
-                    Number.isFinite(
-                        Number(data.x)
-                    )
-                ) {
-                    current.x =
-                        Number(data.x);
-                }
-
-                if (
-                    Number.isFinite(
-                        Number(data.y)
-                    )
-                ) {
-                    current.y =
-                        Number(data.y);
-                }
-
-                if (
-                    Number.isFinite(
-                        Number(data.z)
-                    )
-                ) {
-                    current.z =
-                        Number(data.z);
-                }
-
-                if (
-                    Number.isFinite(
-                        Number(data.rotation)
-                    )
-                ) {
-                    current.rotation =
-                        Number(data.rotation);
-                }
-            }
-
-            socket.broadcast.emit(
-                "player:update",
-                current
+        const hasAssetExtension =
+            assetExtensions.some(
+                extension =>
+                    req.path
+                        .toLowerCase()
+                        .endsWith(
+                            extension
+                        )
             );
+
+        if (
+            hasAssetExtension
+        ) {
+
+            return next();
+
         }
-    );
 
-    socket.on(
-        "player:name",
-        (name) => {
+        res.sendFile(
+            path.join(
+                PUBLIC_DIR,
+                "index.html"
+            ),
+            error => {
 
-            const current =
-                players.get(
-                    socket.id
-                );
+                if (error) {
 
-            if (!current) {
-                return;
-            }
+                    next(error);
 
-            const cleanName =
-                String(name || "")
-                    .trim()
-                    .slice(0, 20);
-
-            if (!cleanName) {
-                return;
-            }
-
-            current.name =
-                cleanName;
-
-            io.emit(
-                "player:name",
-                {
-                    id: socket.id,
-                    name: cleanName
                 }
-            );
-        }
-    );
 
-    socket.on(
-        "disconnect",
+            }
+        );
+
+    }
+);
+
+/*
+=========================================================
+404 HANDLER
+=========================================================
+*/
+
+app.use(
+    (req, res) => {
+
+        res.status(404).json({
+
+            success: false,
+
+            error:
+                "Not Found",
+
+            path:
+                req.originalUrl
+
+        });
+
+    }
+);
+
+/*
+=========================================================
+ERROR HANDLER
+=========================================================
+*/
+
+app.use(
+    (
+        error,
+        req,
+        res,
+        next
+    ) => {
+
+        console.error(
+            "SERVER ERROR:",
+            error
+        );
+
+        if (
+            res.headersSent
+        ) {
+
+            return next(
+                error
+            );
+
+        }
+
+        const statusCode =
+            Number(
+                error.status
+            ) >= 400 &&
+            Number(
+                error.status
+            ) < 600
+                ? Number(
+                    error.status
+                )
+                : 500;
+
+        res.status(
+            statusCode
+        ).json({
+
+            success: false,
+
+            error:
+                IS_PRODUCTION
+                    ? "Internal server error"
+                    : error.message
+
+        });
+
+    }
+);
+
+/*
+=========================================================
+START SERVER
+=========================================================
+*/
+
+const server =
+    app.listen(
+        PORT,
+        HOST,
         () => {
 
-            players.delete(
-                socket.id
-            );
-
-            socket.broadcast.emit(
-                "player:left",
-                {
-                    id: socket.id
-                }
+            console.log(
+                "================================================="
             );
 
             console.log(
-                `Player disconnected: ${socket.id}`
+                "              PET WORLD SERVER"
             );
+
+            console.log(
+                "================================================="
+            );
+
+            console.log(
+                `Environment : ${
+                    IS_PRODUCTION
+                        ? "production"
+                        : "development"
+                }`
+            );
+
+            console.log(
+                `Host        : ${HOST}`
+            );
+
+            console.log(
+                `Port        : ${PORT}`
+            );
+
+            console.log(
+                `Public      : ${PUBLIC_DIR}`
+            );
+
+            console.log(
+                "Status      : ONLINE"
+            );
+
+            console.log(
+                "================================================="
+            );
+
         }
     );
-});
 
-server.listen(
-    PORT,
-    "0.0.0.0",
-    () => {
+/*
+=========================================================
+SERVER ERROR
+=========================================================
+*/
 
-        console.log(
-            "================================"
+server.on(
+    "error",
+    error => {
+
+        if (
+            error.code ===
+            "EADDRINUSE"
+        ) {
+
+            console.error(
+                `Port ${PORT} is already in use.`
+            );
+
+        } else {
+
+            console.error(
+                "HTTP server error:",
+                error
+            );
+
+        }
+
+        process.exit(
+            1
         );
 
-        console.log(
-            "🐾 PET WORLD SERVER"
-        );
-
-        console.log(
-            `🚀 Running on port ${PORT}`
-        );
-
-        console.log(
-            "================================"
-        );
     }
 );
+
+/*
+=========================================================
+GRACEFUL SHUTDOWN
+=========================================================
+*/
+
+function shutdown(
+    signal
+) {
+
+    console.log(
+        `${signal} received. Shutting down...`
+    );
+
+    server.close(
+        error => {
+
+            if (error) {
+
+                console.error(
+                    "Shutdown error:",
+                    error
+                );
+
+                process.exit(
+                    1
+                );
+
+            }
+
+            console.log(
+                "PET WORLD server stopped."
+            );
+
+            process.exit(
+                0
+            );
+
+        }
+    );
+
+    /*
+    Force shutdown after 10 seconds
+    if something refuses to close.
+    */
+
+    setTimeout(
+        () => {
+
+            console.error(
+                "Forced shutdown."
+            );
+
+            process.exit(
+                1
+            );
+
+        },
+        10000
+    ).unref();
+
+}
+
+process.on(
+    "SIGTERM",
+    () => {
+
+        shutdown(
+            "SIGTERM"
+        );
+
+    }
+);
+
+process.on(
+    "SIGINT",
+    () => {
+
+        shutdown(
+            "SIGINT"
+        );
+
+    }
+);
+
+/*
+=========================================================
+UNHANDLED ERRORS
+=========================================================
+*/
+
+process.on(
+    "uncaughtException",
+    error => {
+
+        console.error(
+            "UNCAUGHT EXCEPTION:",
+            error
+        );
+
+    }
+);
+
+process.on(
+    "unhandledRejection",
+    reason => {
+
+        console.error(
+            "UNHANDLED REJECTION:",
+            reason
+        );
+
+    }
+);
+
+/*
+=========================================================
+END SERVER
+=========================================================
+*/
