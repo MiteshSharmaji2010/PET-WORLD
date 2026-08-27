@@ -1,8 +1,7 @@
-```javascript
 // ============================================================
 // PET WORLD
 // public/js/ui.js
-// Complete & Defensive Game UI System
+// Complete Game UI System - Fixed Version
 // ============================================================
 
 export class GameUI {
@@ -16,19 +15,17 @@ export class GameUI {
         this.petOpen = false;
         this.settingsOpen = false;
         this.statsOpen = false;
-
         this.initialized = false;
 
         this.lastInventoryUpdate = 0;
         this.lastMapUpdate = 0;
         this.lastXPUpdate = 0;
         this.lastPetUpdate = 0;
-        this.lastStatsUpdate = 0;
+        this.lastStatisticsUpdate = 0;
 
         this.notificationQueue = [];
         this.notificationsVisible = 0;
 
-        this.boundKeyboardHandler = null;
     }
 
 
@@ -41,6 +38,7 @@ export class GameUI {
         try {
 
             this.createUI();
+
             this.bindEvents();
 
             this.initialized = true;
@@ -65,12 +63,12 @@ export class GameUI {
 
     createUI() {
 
-        let ui =
+        const existing =
             document.getElementById(
                 "pet-world-ui"
             );
 
-        if (ui) {
+        if (existing) {
 
             this.injectStyles();
 
@@ -79,7 +77,7 @@ export class GameUI {
         }
 
 
-        ui =
+        const ui =
             document.createElement(
                 "div"
             );
@@ -89,6 +87,9 @@ export class GameUI {
             "pet-world-ui";
 
 
+        // IMPORTANT:
+        // Everything inside this template literal is HTML.
+        // Do not place JavaScript comments inside it.
         ui.innerHTML = `
 
             <!-- ================================================= -->
@@ -250,7 +251,9 @@ export class GameUI {
 
                 <div class="xp-label">
 
-                    <span>LEVEL</span>
+                    <span>
+                        LEVEL
+                    </span>
 
                     <strong id="ui-level">
                         1
@@ -265,7 +268,9 @@ export class GameUI {
 
                 <div class="xp-bar">
 
-                    <div id="ui-xp-fill"></div>
+                    <div
+                        id="ui-xp-fill"
+                    ></div>
 
                 </div>
 
@@ -371,7 +376,9 @@ export class GameUI {
             <div id="pet-world-panels">
 
 
+                <!-- ================================================= -->
                 <!-- INVENTORY -->
+                <!-- ================================================= -->
 
                 <div
                     id="inventory-panel"
@@ -388,6 +395,7 @@ export class GameUI {
                             id="close-inventory"
                             class="close-button"
                             type="button"
+                            title="Close"
                         >
                             ×
                         </button>
@@ -409,7 +417,9 @@ export class GameUI {
                 </div>
 
 
+                <!-- ================================================= -->
                 <!-- PETS -->
+                <!-- ================================================= -->
 
                 <div
                     id="pets-panel"
@@ -426,6 +436,7 @@ export class GameUI {
                             id="close-pets"
                             class="close-button"
                             type="button"
+                            title="Close"
                         >
                             ×
                         </button>
@@ -447,7 +458,9 @@ export class GameUI {
                 </div>
 
 
+                <!-- ================================================= -->
                 <!-- MAP -->
+                <!-- ================================================= -->
 
                 <div
                     id="map-panel"
@@ -464,6 +477,7 @@ export class GameUI {
                             id="close-map"
                             class="close-button"
                             type="button"
+                            title="Close"
                         >
                             ×
                         </button>
@@ -506,7 +520,9 @@ export class GameUI {
                 </div>
 
 
+                <!-- ================================================= -->
                 <!-- STATISTICS -->
+                <!-- ================================================= -->
 
                 <div
                     id="stats-panel"
@@ -523,6 +539,7 @@ export class GameUI {
                             id="close-stats"
                             class="close-button"
                             type="button"
+                            title="Close"
                         >
                             ×
                         </button>
@@ -538,7 +555,9 @@ export class GameUI {
                 </div>
 
 
+                <!-- ================================================= -->
                 <!-- SETTINGS -->
+                <!-- ================================================= -->
 
                 <div
                     id="settings-panel"
@@ -555,6 +574,7 @@ export class GameUI {
                             id="close-settings"
                             class="close-button"
                             type="button"
+                            title="Close"
                         >
                             ×
                         </button>
@@ -618,7 +638,11 @@ export class GameUI {
             <!-- NOTIFICATIONS -->
             <!-- ================================================= -->
 
-            <div id="ui-notifications"></div>
+            <div
+                id="ui-notifications"
+                aria-live="polite"
+                aria-atomic="true"
+            ></div>
 
 
             <!-- ================================================= -->
@@ -720,10 +744,6 @@ export class GameUI {
         );
 
 
-        // --------------------------------------------------------
-        // EAT
-        // --------------------------------------------------------
-
         this.bindClick(
             "eat-button",
             () => {
@@ -744,12 +764,12 @@ export class GameUI {
                     } catch (error) {
 
                         console.error(
-                            "useHealingFood error:",
+                            "Eat food error:",
                             error
                         );
 
                         this.notify(
-                            "❌ Could not use food"
+                            "❌ Could not eat food"
                         );
 
                     }
@@ -757,21 +777,16 @@ export class GameUI {
                 } else {
 
                     this.notify(
-                        "❌ Food system unavailable"
+                        "⚠️ Food system unavailable"
                     );
 
                 }
-
 
                 this.updatePlayerStatus();
 
             }
         );
 
-
-        // --------------------------------------------------------
-        // POTION
-        // --------------------------------------------------------
 
         this.bindClick(
             "potion-button",
@@ -793,7 +808,7 @@ export class GameUI {
                     } catch (error) {
 
                         console.error(
-                            "usePotion error:",
+                            "Potion error:",
                             error
                         );
 
@@ -806,21 +821,16 @@ export class GameUI {
                 } else {
 
                     this.notify(
-                        "❌ Potion system unavailable"
+                        "⚠️ Potion system unavailable"
                     );
 
                 }
-
 
                 this.updatePlayerStatus();
 
             }
         );
 
-
-        // --------------------------------------------------------
-        // CAPTURE
-        // --------------------------------------------------------
 
         this.bindClick(
             "capture-button",
@@ -842,7 +852,7 @@ export class GameUI {
                     } catch (error) {
 
                         console.error(
-                            "captureNearestCreature error:",
+                            "Capture error:",
                             error
                         );
 
@@ -852,24 +862,19 @@ export class GameUI {
 
                     }
 
+                    this.updatePets();
+
                 } else {
 
                     this.notify(
-                        "❌ Capture system unavailable"
+                        "⚠️ Capture system unavailable"
                     );
 
                 }
 
-
-                this.updatePets();
-
             }
         );
 
-
-        // --------------------------------------------------------
-        // SAVE
-        // --------------------------------------------------------
 
         this.bindClick(
             "save-game-button",
@@ -878,7 +883,6 @@ export class GameUI {
                 const systems =
                     this.getSystems();
 
-
                 if (
                     !systems ||
                     typeof systems.saveGame !==
@@ -886,7 +890,7 @@ export class GameUI {
                 ) {
 
                     this.notify(
-                        "❌ Save system unavailable"
+                        "⚠️ Save system unavailable"
                     );
 
                     return;
@@ -896,25 +900,14 @@ export class GameUI {
 
                 try {
 
-                    const result =
+                    const success =
                         systems.saveGame();
 
-
-                    if (
-                        result === false
-                    ) {
-
-                        this.notify(
-                            "❌ Save failed"
-                        );
-
-                    } else {
-
-                        this.notify(
-                            "💾 Game saved"
-                        );
-
-                    }
+                    this.notify(
+                        success === false
+                            ? "❌ Save failed"
+                            : "💾 Game saved"
+                    );
 
                 } catch (error) {
 
@@ -933,19 +926,11 @@ export class GameUI {
         );
 
 
-        // --------------------------------------------------------
-        // EXPORT
-        // --------------------------------------------------------
-
         this.bindClick(
             "export-save-button",
             () => this.exportSave()
         );
 
-
-        // --------------------------------------------------------
-        // IMPORT BUTTON
-        // --------------------------------------------------------
 
         this.bindClick(
             "import-save-button",
@@ -955,7 +940,6 @@ export class GameUI {
                     document.getElementById(
                         "import-save-input"
                     );
-
 
                 if (input) {
 
@@ -979,42 +963,34 @@ export class GameUI {
                 "change",
                 event => {
 
-                    try {
-
-                        const file =
-                            event.target &&
-                            event.target.files &&
-                            event.target.files[0];
-
-
-                        if (!file) {
-
-                            return;
-
-                        }
+                    const file =
+                        event &&
+                        event.target &&
+                        event.target.files
+                            ? event.target.files[0]
+                            : null;
 
 
-                        this.importSave(
-                            file
-                        );
+                    if (!file) {
 
-
-                    } finally {
-
-                        event.target.value =
-                            "";
+                        return;
 
                     }
+
+
+                    this.importSave(
+                        file
+                    );
+
+
+                    event.target.value =
+                        "";
 
                 }
             );
 
         }
 
-
-        // --------------------------------------------------------
-        // RESET
-        // --------------------------------------------------------
 
         this.bindClick(
             "reset-game-button",
@@ -1063,7 +1039,7 @@ export class GameUI {
                 } else {
 
                     this.notify(
-                        "❌ Reset system unavailable"
+                        "⚠️ Reset system unavailable"
                     );
 
                 }
@@ -1072,23 +1048,12 @@ export class GameUI {
         );
 
 
-        // --------------------------------------------------------
-        // KEYBOARD
-        // --------------------------------------------------------
+        // ========================================================
+        // KEYBOARD SHORTCUTS
+        // ========================================================
 
-        if (
-            this.boundKeyboardHandler
-        ) {
-
-            window.removeEventListener(
-                "keydown",
-                this.boundKeyboardHandler
-            );
-
-        }
-
-
-        this.boundKeyboardHandler =
+        window.addEventListener(
+            "keydown",
             event => {
 
                 if (!event) {
@@ -1098,6 +1063,7 @@ export class GameUI {
                 }
 
 
+                // Do not trigger UI shortcuts while typing.
                 const target =
                     event.target;
 
@@ -1107,71 +1073,79 @@ export class GameUI {
                     (
                         target.tagName === "INPUT" ||
                         target.tagName === "TEXTAREA" ||
-                        target.tagName === "SELECT"
+                        target.tagName === "SELECT" ||
+                        target.isContentEditable
                     )
                 ) {
+
+                    if (
+                        event.code === "Escape"
+                    ) {
+
+                        this.closeAll();
+
+                    }
 
                     return;
 
                 }
 
 
-                switch (event.code) {
+                if (
+                    event.code === "Escape"
+                ) {
 
-                    case "Escape":
+                    this.closeAll();
 
-                        this.closeAll();
-
-                        break;
-
-
-                    case "KeyI":
-
-                        this.toggleInventory();
-
-                        break;
-
-
-                    case "KeyP":
-
-                        this.togglePets();
-
-                        break;
-
-
-                    case "KeyM":
-
-                        this.toggleMap();
-
-                        break;
-
-
-                    default:
-
-                        break;
+                    return;
 
                 }
 
-            };
+
+                if (
+                    event.code === "KeyI"
+                ) {
+
+                    this.toggleInventory();
+
+                    return;
+
+                }
 
 
-        window.addEventListener(
-            "keydown",
-            this.boundKeyboardHandler
+                if (
+                    event.code === "KeyP"
+                ) {
+
+                    this.togglePets();
+
+                    return;
+
+                }
+
+
+                if (
+                    event.code === "KeyM"
+                ) {
+
+                    this.toggleMap();
+
+                }
+
+            }
         );
 
     }
 
 
     // ============================================================
-    // SYSTEMS HELPER
+    // GET SYSTEMS
     // ============================================================
 
     getSystems() {
 
         if (
-            !this.game ||
-            !this.game.systems
+            !this.game
         ) {
 
             return null;
@@ -1179,7 +1153,7 @@ export class GameUI {
         }
 
 
-        return this.game.systems;
+        return this.game.systems || null;
 
     }
 
@@ -1214,11 +1188,11 @@ export class GameUI {
             "click",
             event => {
 
+                event.preventDefault();
+
                 try {
 
-                    callback(
-                        event
-                    );
+                    callback(event);
 
                 } catch (error) {
 
@@ -1241,7 +1215,9 @@ export class GameUI {
 
     toggleInventory() {
 
-        if (this.inventoryOpen) {
+        if (
+            this.inventoryOpen
+        ) {
 
             this.closeAll();
 
@@ -1304,7 +1280,8 @@ export class GameUI {
 
         const inventory =
             systems.inventory &&
-            typeof systems.inventory === "object"
+            typeof systems.inventory ===
+            "object"
                 ? systems.inventory
                 : {};
 
@@ -1365,105 +1342,103 @@ export class GameUI {
         ) {
 
             container.innerHTML = `
-
                 <div class="empty-message">
                     🎒 Inventory is empty.
                 </div>
-
             `;
 
-        } else {
+            this.setText(
+                "inventory-summary",
+                "Items: 0"
+            );
 
-            items.forEach(
-                item => {
+            return;
 
-                    const amount =
+        }
+
+
+        let total =
+            0;
+
+
+        items.forEach(
+            item => {
+
+                const amount =
+                    Math.max(
+                        0,
                         Number(
                             inventory[item]
-                        ) || 0;
-
-
-                    const info =
-                        itemInfo[item] || {
-
-                            icon: "📦",
-                            name: item,
-                            description: "Game item"
-
-                        };
-
-
-                    const slot =
-                        document.createElement(
-                            "div"
-                        );
-
-
-                    slot.className =
-                        "inventory-slot";
-
-
-                    slot.innerHTML = `
-
-                        <div class="item-icon">
-                            ${info.icon}
-                        </div>
-
-                        <div class="item-name">
-                            ${this.escapeHTML(info.name)}
-                        </div>
-
-                        <div class="item-description">
-                            ${this.escapeHTML(info.description)}
-                        </div>
-
-                        <div class="item-count">
-                            ${amount}
-                        </div>
-
-                    `;
-
-
-                    container.appendChild(
-                        slot
+                        ) || 0
                     );
 
-                }
-            );
 
-        }
-
-
-        const summary =
-            document.getElementById(
-                "inventory-summary"
-            );
+                total +=
+                    amount;
 
 
-        if (summary) {
+                const info =
+                    itemInfo[item] || {
 
-            let total = 0;
+                        icon: "📦",
 
+                        name: item,
 
-            Object.values(
-                inventory
-            ).forEach(
-                value => {
+                        description:
+                            "Game item"
 
-                    total +=
-                        Math.max(
-                            0,
-                            Number(value) || 0
-                        );
-
-                }
-            );
+                    };
 
 
-            summary.textContent =
-                `Items: ${total}`;
+                const slot =
+                    document.createElement(
+                        "div"
+                    );
 
-        }
+
+                slot.className =
+                    "inventory-slot";
+
+
+                slot.innerHTML = `
+
+                    <div class="item-icon">
+                        ${this.escapeHTML(
+                            info.icon
+                        )}
+                    </div>
+
+                    <div class="item-name">
+                        ${this.escapeHTML(
+                            info.name
+                        )}
+                    </div>
+
+                    <div class="item-description">
+                        ${this.escapeHTML(
+                            info.description
+                        )}
+                    </div>
+
+                    <div class="item-count">
+                        ${amount}
+                    </div>
+
+                `;
+
+
+                container.appendChild(
+                    slot
+                );
+
+            }
+        );
+
+
+        this.setText(
+            "inventory-summary",
+            `Items: ${total}`
+        );
 
     }
 
@@ -1474,7 +1449,9 @@ export class GameUI {
 
     togglePets() {
 
-        if (this.petOpen) {
+        if (
+            this.petOpen
+        ) {
 
             this.closeAll();
 
@@ -1547,27 +1524,19 @@ export class GameUI {
             "";
 
 
-        const summary =
-            document.getElementById(
-                "pets-summary"
+        const maxPets =
+            Math.max(
+                1,
+                Number(
+                    systems.maxPets
+                ) || 50
             );
 
 
-        if (summary) {
-
-            const maxPets =
-                Math.max(
-                    1,
-                    Number(
-                        systems.maxPets
-                    ) || 50
-                );
-
-
-            summary.textContent =
-                `Pets: ${pets.length}/${maxPets}`;
-
-        }
+        this.setText(
+            "pets-summary",
+            `Pets: ${pets.length}/${maxPets}`
+        );
 
 
         if (
@@ -1595,11 +1564,12 @@ export class GameUI {
 
 
         pets.forEach(
-            (pet, index) => {
+            pet => {
 
                 if (
                     !pet ||
-                    typeof pet !== "object"
+                    typeof pet !==
+                    "object"
                 ) {
 
                     return;
@@ -1617,18 +1587,19 @@ export class GameUI {
                     "pet-card";
 
 
-                const petId =
-                    pet.id !== undefined &&
-                    pet.id !== null
-                        ? String(pet.id)
-                        : String(index);
-
-
                 const active =
                     String(
                         systems.activePetId
                     ) ===
-                    petId;
+                    String(
+                        pet.id
+                    );
+
+
+                const health =
+                    Number(
+                        pet.health
+                    ) || 0;
 
 
                 const maxHealth =
@@ -1637,15 +1608,6 @@ export class GameUI {
                         Number(
                             pet.maxHealth
                         ) || 1
-                    );
-
-
-                const health =
-                    Math.max(
-                        0,
-                        Number(
-                            pet.health
-                        ) || 0
                     );
 
 
@@ -1694,6 +1656,13 @@ export class GameUI {
                     );
 
 
+                const petId =
+                    String(
+                        pet.id ??
+                        ""
+                    );
+
+
                 card.innerHTML = `
 
                     <div class="pet-avatar">
@@ -1704,12 +1673,16 @@ export class GameUI {
                     <div class="pet-details">
 
                         <strong>
-                            ${this.escapeHTML(petName)}
+                            ${this.escapeHTML(
+                                petName
+                            )}
                         </strong>
 
 
                         <span>
-                            ${this.escapeHTML(rarity)}
+                            ${this.escapeHTML(
+                                rarity
+                            )}
                         </span>
 
 
@@ -1729,15 +1702,21 @@ export class GameUI {
 
                         <span>
                             ❤️
-                            ${Math.round(health)}
+                            ${Math.round(
+                                health
+                            )}
                             /
-                            ${Math.round(maxHealth)}
+                            ${Math.round(
+                                maxHealth
+                            )}
                         </span>
 
 
                         <span>
                             🍖
-                            ${Math.round(hungerPercent)}%
+                            ${Math.round(
+                                hungerPercent
+                            )}%
                         </span>
 
                     </div>
@@ -1748,16 +1727,25 @@ export class GameUI {
                         <button
                             class="pet-select-button"
                             type="button"
-                            data-pet-id="${this.escapeHTML(petId)}"
+                            data-pet-id="${this.escapeHTML(
+                                petId
+                            )}"
                         >
-                            ${active ? "ACTIVE" : "USE"}
+                            ${
+                                active
+                                    ? "ACTIVE"
+                                    : "USE"
+                            }
                         </button>
 
 
                         <button
                             class="pet-feed-button"
                             type="button"
-                            data-feed-pet-id="${this.escapeHTML(petId)}"
+                            data-feed-pet-id="${this.escapeHTML(
+                                petId
+                            )}"
+                            title="Feed pet"
                         >
                             🍖
                         </button>
@@ -1775,9 +1763,9 @@ export class GameUI {
         );
 
 
-        // --------------------------------------------------------
+        // ========================================================
         // SELECT PET
-        // --------------------------------------------------------
+        // ========================================================
 
         container
             .querySelectorAll(
@@ -1791,50 +1779,59 @@ export class GameUI {
                         () => {
 
                             const petId =
-                                button.dataset &&
-                                button.dataset.petId;
+                                button.dataset
+                                    .petId;
+
+
+                            const currentSystems =
+                                this.getSystems();
 
 
                             if (
-                                !petId
+                                !currentSystems ||
+                                typeof currentSystems.setActivePet !==
+                                "function"
                             ) {
+
+                                this.notify(
+                                    "⚠️ Pet system unavailable"
+                                );
 
                                 return;
 
                             }
 
 
-                            if (
-                                typeof systems.setActivePet ===
-                                "function"
-                            ) {
+                            try {
 
-                                try {
-
-                                    systems.setActivePet(
+                                currentSystems
+                                    .setActivePet(
                                         petId
                                     );
 
-                                } catch (error) {
 
-                                    console.error(
-                                        "setActivePet error:",
-                                        error
-                                    );
+                                this.updatePets();
 
-                                }
-
-                            } else {
+                                this.updateActivePet();
 
                                 this.notify(
-                                    "❌ Pet system unavailable"
+                                    `🐾 ${this.getPetNameById(
+                                        petId
+                                    )} is now active!`
+                                );
+
+                            } catch (error) {
+
+                                console.error(
+                                    "Set active pet error:",
+                                    error
+                                );
+
+                                this.notify(
+                                    "❌ Could not activate pet"
                                 );
 
                             }
-
-
-                            this.updatePets();
-                            this.updateActivePet();
 
                         }
                     );
@@ -1843,9 +1840,9 @@ export class GameUI {
             );
 
 
-        // --------------------------------------------------------
+        // ========================================================
         // FEED PET
-        // --------------------------------------------------------
+        // ========================================================
 
         container
             .querySelectorAll(
@@ -1859,60 +1856,112 @@ export class GameUI {
                         () => {
 
                             const petId =
-                                button.dataset &&
-                                button.dataset.feedPetId;
+                                button.dataset
+                                    .feedPetId;
+
+
+                            const currentSystems =
+                                this.getSystems();
 
 
                             if (
-                                !petId
+                                !currentSystems ||
+                                typeof currentSystems.feedPet !==
+                                "function"
                             ) {
+
+                                this.notify(
+                                    "⚠️ Pet feeding system unavailable"
+                                );
 
                                 return;
 
                             }
 
 
-                            if (
-                                typeof systems.feedPet ===
-                                "function"
-                            ) {
+                            try {
 
-                                try {
-
-                                    systems.feedPet(
+                                currentSystems
+                                    .feedPet(
                                         petId
                                     );
 
-                                } catch (error) {
 
-                                    console.error(
-                                        "feedPet error:",
-                                        error
-                                    );
+                                this.updatePets();
 
-                                    this.notify(
-                                        "❌ Could not feed pet"
-                                    );
-
-                                }
-
-                            } else {
+                                this.updateActivePet();
 
                                 this.notify(
-                                    "❌ Pet feeding unavailable"
+                                    `🍖 ${this.getPetNameById(
+                                        petId
+                                    )} fed`
+                                );
+
+                            } catch (error) {
+
+                                console.error(
+                                    "Feed pet error:",
+                                    error
+                                );
+
+                                this.notify(
+                                    "❌ Could not feed pet"
                                 );
 
                             }
-
-
-                            this.updatePets();
-                            this.updateActivePet();
 
                         }
                     );
 
                 }
             );
+
+    }
+
+
+    // ============================================================
+    // GET PET NAME
+    // ============================================================
+
+    getPetNameById(
+        petId
+    ) {
+
+        const systems =
+            this.getSystems();
+
+
+        if (
+            !systems ||
+            !Array.isArray(
+                systems.pets
+            )
+        ) {
+
+            return "Pet";
+
+        }
+
+
+        const pet =
+            systems.pets.find(
+                item =>
+                    item &&
+                    String(
+                        item.id
+                    ) ===
+                    String(
+                        petId
+                    )
+            );
+
+
+        return pet &&
+            pet.name
+            ? String(
+                pet.name
+            )
+            : "Pet";
 
     }
 
@@ -1943,7 +1992,8 @@ export class GameUI {
         }
 
 
-        let pet = null;
+        let pet =
+            null;
 
 
         if (
@@ -1968,6 +2018,28 @@ export class GameUI {
         }
 
 
+        if (
+            !pet &&
+            Array.isArray(
+                systems.pets
+            )
+        ) {
+
+            pet =
+                systems.pets.find(
+                    item =>
+                        item &&
+                        String(
+                            item.id
+                        ) ===
+                        String(
+                            systems.activePetId
+                        )
+                ) || null;
+
+        }
+
+
         if (!pet) {
 
             info.classList.add(
@@ -1984,50 +2056,28 @@ export class GameUI {
         );
 
 
-        const name =
-            document.getElementById(
-                "active-pet-name"
-            );
+        this.setText(
+            "active-pet-name",
+            pet.name ||
+            "Pet"
+        );
 
 
-        const level =
-            document.getElementById(
-                "active-pet-level"
-            );
+        this.setText(
+            "active-pet-level",
+            Math.max(
+                1,
+                Number(
+                    pet.level
+                ) || 1
+            )
+        );
 
 
         const health =
-            document.getElementById(
-                "active-pet-health"
-            );
-
-
-        const hunger =
-            document.getElementById(
-                "active-pet-hunger"
-            );
-
-
-        if (name) {
-
-            name.textContent =
-                pet.name ||
-                "Pet";
-
-        }
-
-
-        if (level) {
-
-            level.textContent =
-                Math.max(
-                    1,
-                    Number(
-                        pet.level
-                    ) || 1
-                );
-
-        }
+            Number(
+                pet.health
+            ) || 0;
 
 
         const maxHealth =
@@ -2039,22 +2089,13 @@ export class GameUI {
             );
 
 
-        const currentHealth =
-            Math.max(
-                0,
-                Number(
-                    pet.health
-                ) || 0
-            );
-
-
         const healthPercent =
             Math.max(
                 0,
                 Math.min(
                     100,
                     (
-                        currentHealth /
+                        health /
                         maxHealth
                     ) *
                     100
@@ -2062,17 +2103,33 @@ export class GameUI {
             );
 
 
-        if (health) {
+        const healthElement =
+            document.getElementById(
+                "active-pet-health"
+            );
 
-            health.style.width =
+
+        if (
+            healthElement
+        ) {
+
+            healthElement.style.width =
                 `${healthPercent}%`;
 
         }
 
 
-        if (hunger) {
+        const hungerElement =
+            document.getElementById(
+                "active-pet-hunger"
+            );
 
-            const hungerPercent =
+
+        if (
+            hungerElement
+        ) {
+
+            const hunger =
                 Math.max(
                     0,
                     Math.min(
@@ -2084,8 +2141,8 @@ export class GameUI {
                 );
 
 
-            hunger.style.width =
-                `${hungerPercent}%`;
+            hungerElement.style.width =
+                `${hunger}%`;
 
         }
 
@@ -2098,7 +2155,9 @@ export class GameUI {
 
     toggleMap() {
 
-        if (this.mapOpen) {
+        if (
+            this.mapOpen
+        ) {
 
             this.closeAll();
 
@@ -2147,8 +2206,7 @@ export class GameUI {
 
         if (
             !marker ||
-            !this.game ||
-            !this.game.player
+            !this.game
         ) {
 
             return;
@@ -2156,36 +2214,50 @@ export class GameUI {
         }
 
 
-        let position = null;
+        const player =
+            this.game.player;
 
 
-        try {
+        if (!player) {
 
-            if (
-                typeof this.game.player.getPosition ===
-                "function"
-            ) {
+            return;
+
+        }
+
+
+        let position =
+            null;
+
+
+        if (
+            typeof player.getPosition ===
+            "function"
+        ) {
+
+            try {
 
                 position =
-                    this.game.player.getPosition();
+                    player.getPosition();
 
-            } else if (
-                this.game.player.position
-            ) {
+            } catch (error) {
 
-                position =
-                    this.game.player.position;
+                console.error(
+                    "Player position error:",
+                    error
+                );
 
             }
 
-        } catch (error) {
+        }
 
-            console.error(
-                "Player position error:",
-                error
-            );
 
-            return;
+        if (
+            !position &&
+            player.position
+        ) {
+
+            position =
+                player.position;
 
         }
 
@@ -2209,35 +2281,37 @@ export class GameUI {
             ) || 0;
 
 
-        let worldSize = 500;
+        const world =
+            this.game.world;
+
+
+        let worldSize =
+            500;
 
 
         if (
-            this.game.world &&
+            world &&
             Number.isFinite(
                 Number(
-                    this.game.world.size
+                    world.size
                 )
             )
         ) {
 
             worldSize =
-                Number(
-                    this.game.world.size
+                Math.max(
+                    1,
+                    Number(
+                        world.size
+                    )
                 );
 
         }
 
 
-        worldSize =
-            Math.max(
-                1,
-                worldSize
-            );
-
-
         const half =
-            worldSize / 2;
+            worldSize /
+            2;
 
 
         const x =
@@ -2282,24 +2356,14 @@ export class GameUI {
             )}%`;
 
 
-        const coordinates =
-            document.getElementById(
-                "map-coordinates"
-            );
-
-
-        if (coordinates) {
-
-            coordinates.textContent =
-                `X: ${Math.round(px)} | Z: ${Math.round(pz)}`;
-
-        }
-
-
-        const discovered =
-            document.getElementById(
-                "discovered-count"
-            );
+        this.setText(
+            "map-coordinates",
+            `X: ${Math.round(
+                px
+            )} | Z: ${Math.round(
+                pz
+            )}`
+        );
 
 
         const systems =
@@ -2307,20 +2371,48 @@ export class GameUI {
 
 
         if (
-            discovered &&
             systems
         ) {
 
-            const locations =
-                Array.isArray(
-                    systems.discoveredLocations
-                )
-                    ? systems.discoveredLocations
-                    : [];
+            const discovered =
+                document.getElementById(
+                    "discovered-count"
+                );
 
 
-            discovered.textContent =
-                `Locations discovered: ${locations.length}`;
+            if (discovered) {
+
+                let count =
+                    0;
+
+
+                if (
+                    Array.isArray(
+                        systems.discoveredLocations
+                    )
+                ) {
+
+                    count =
+                        systems.discoveredLocations.length;
+
+                } else if (
+                    systems.discoveredLocations &&
+                    typeof systems.discoveredLocations ===
+                    "object"
+                ) {
+
+                    count =
+                        Object.keys(
+                            systems.discoveredLocations
+                        ).length;
+
+                }
+
+
+                discovered.textContent =
+                    `Locations discovered: ${count}`;
+
+            }
 
         }
 
@@ -2333,7 +2425,9 @@ export class GameUI {
 
     toggleSettings() {
 
-        if (this.settingsOpen) {
+        if (
+            this.settingsOpen
+        ) {
 
             this.closeAll();
 
@@ -2393,14 +2487,18 @@ export class GameUI {
         this.inventoryOpen =
             false;
 
+
         this.mapOpen =
             false;
+
 
         this.petOpen =
             false;
 
+
         this.settingsOpen =
             false;
+
 
         this.statsOpen =
             false;
@@ -2415,8 +2513,7 @@ export class GameUI {
     updatePlayerStatus() {
 
         if (
-            !this.game ||
-            !this.game.player
+            !this.game
         ) {
 
             return;
@@ -2426,6 +2523,13 @@ export class GameUI {
 
         const player =
             this.game.player;
+
+
+        if (!player) {
+
+            return;
+
+        }
 
 
         const health =
@@ -2496,19 +2600,31 @@ export class GameUI {
 
         this.setText(
             "health-text",
-            `${Math.round(health)}/${Math.round(maxHealth)}`
+            `${Math.round(
+                health
+            )}/${Math.round(
+                maxHealth
+            )}`
         );
 
 
         this.setText(
             "stamina-text",
-            `${Math.round(stamina)}/${Math.round(maxStamina)}`
+            `${Math.round(
+                stamina
+            )}/${Math.round(
+                maxStamina
+            )}`
         );
 
 
         this.setText(
             "hunger-text",
-            `${Math.round(hunger)}/${Math.round(maxHunger)}`
+            `${Math.round(
+                hunger
+            )}/${Math.round(
+                maxHunger
+            )}`
         );
 
 
@@ -2516,7 +2632,9 @@ export class GameUI {
             this.getSystems();
 
 
-        if (systems) {
+        if (
+            systems
+        ) {
 
             this.setText(
                 "ui-coins",
@@ -2565,7 +2683,7 @@ export class GameUI {
             );
 
 
-        const xpToNextLevel =
+        const xpToNext =
             Math.max(
                 1,
                 Number(
@@ -2582,14 +2700,18 @@ export class GameUI {
 
         this.setText(
             "xp-text",
-            `${Math.floor(xp)} / ${Math.floor(xpToNextLevel)} XP`
+            `${Math.floor(
+                xp
+            )} / ${Math.floor(
+                xpToNext
+            )} XP`
         );
 
 
         const percent =
             (
                 xp /
-                xpToNextLevel
+                xpToNext
             ) *
             100;
 
@@ -2644,7 +2766,8 @@ export class GameUI {
 
         const stats =
             systems.statistics &&
-            typeof systems.statistics === "object"
+            typeof systems.statistics ===
+            "object"
                 ? systems.statistics
                 : {};
 
@@ -2660,13 +2783,15 @@ export class GameUI {
 
         const minutes =
             Math.floor(
-                playTime / 60
+                playTime /
+                60
             );
 
 
         const seconds =
             Math.floor(
-                playTime % 60
+                playTime %
+                60
             );
 
 
@@ -2687,9 +2812,12 @@ export class GameUI {
                 </span>
 
                 <strong>
-                    ${Number(
-                        stats.creaturesCaptured
-                    ) || 0}
+                    ${Math.max(
+                        0,
+                        Number(
+                            stats.creaturesCaptured
+                        ) || 0
+                    )}
                 </strong>
 
             </div>
@@ -2702,9 +2830,12 @@ export class GameUI {
                 </span>
 
                 <strong>
-                    ${Number(
-                        stats.creaturesDefeated
-                    ) || 0}
+                    ${Math.max(
+                        0,
+                        Number(
+                            stats.creaturesDefeated
+                        ) || 0
+                    )}
                 </strong>
 
             </div>
@@ -2717,9 +2848,12 @@ export class GameUI {
                 </span>
 
                 <strong>
-                    ${Number(
-                        stats.resourcesCollected
-                    ) || 0}
+                    ${Math.max(
+                        0,
+                        Number(
+                            stats.resourcesCollected
+                        ) || 0
+                    )}
                 </strong>
 
             </div>
@@ -2732,9 +2866,12 @@ export class GameUI {
                 </span>
 
                 <strong>
-                    ${Number(
-                        stats.foodConsumed
-                    ) || 0}
+                    ${Math.max(
+                        0,
+                        Number(
+                            stats.foodConsumed
+                        ) || 0
+                    )}
                 </strong>
 
             </div>
@@ -2781,9 +2918,12 @@ export class GameUI {
                 </span>
 
                 <strong>
-                    ${Number(
-                        stats.locationsDiscovered
-                    ) || 0}
+                    ${Math.max(
+                        0,
+                        Number(
+                            stats.locationsDiscovered
+                        ) || 0
+                    )}
                 </strong>
 
             </div>
@@ -2828,17 +2968,113 @@ export class GameUI {
         try {
 
             this.updatePlayerStatus();
+
+        } catch (error) {
+
+            console.error(
+                "UI player update error:",
+                error
+            );
+
+        }
+
+
+        try {
+
             this.updateXP();
+
+        } catch (error) {
+
+            console.error(
+                "UI XP update error:",
+                error
+            );
+
+        }
+
+
+        try {
+
             this.updateActivePet();
-            this.updateInventory();
-            this.updatePets();
-            this.updateMap();
+
+        } catch (error) {
+
+            console.error(
+                "UI active pet update error:",
+                error
+            );
+
+        }
+
+
+        try {
+
+            if (
+                this.inventoryOpen
+            ) {
+
+                this.updateInventory();
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                "UI inventory update error:",
+                error
+            );
+
+        }
+
+
+        try {
+
+            if (
+                this.petOpen
+            ) {
+
+                this.updatePets();
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                "UI pets update error:",
+                error
+            );
+
+        }
+
+
+        try {
+
+            if (
+                this.mapOpen
+            ) {
+
+                this.updateMap();
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                "UI map update error:",
+                error
+            );
+
+        }
+
+
+        try {
+
             this.updateStatistics();
 
         } catch (error) {
 
             console.error(
-                "GameUI updateAll error:",
+                "UI statistics update error:",
                 error
             );
 
@@ -2851,9 +3087,13 @@ export class GameUI {
     // MAIN UPDATE
     // ============================================================
 
-    update(delta = 0) {
+    update(
+        delta = 0
+    ) {
 
-        if (!this.initialized) {
+        if (
+            !this.initialized
+        ) {
 
             return;
 
@@ -2864,9 +3104,13 @@ export class GameUI {
             performance.now();
 
 
-        // --------------------------------------------------------
-        // PLAYER + XP
-        // --------------------------------------------------------
+        // Prevent unused parameter warnings.
+        void delta;
+
+
+        // ========================================================
+        // PLAYER STATUS + XP
+        // ========================================================
 
         if (
             now -
@@ -2877,15 +3121,28 @@ export class GameUI {
             this.lastXPUpdate =
                 now;
 
-            this.updatePlayerStatus();
-            this.updateXP();
+
+            try {
+
+                this.updatePlayerStatus();
+
+                this.updateXP();
+
+            } catch (error) {
+
+                console.error(
+                    "UI player/XP update error:",
+                    error
+                );
+
+            }
 
         }
 
 
-        // --------------------------------------------------------
+        // ========================================================
         // ACTIVE PET
-        // --------------------------------------------------------
+        // ========================================================
 
         if (
             now -
@@ -2896,14 +3153,26 @@ export class GameUI {
             this.lastPetUpdate =
                 now;
 
-            this.updateActivePet();
+
+            try {
+
+                this.updateActivePet();
+
+            } catch (error) {
+
+                console.error(
+                    "UI pet update error:",
+                    error
+                );
+
+            }
 
         }
 
 
-        // --------------------------------------------------------
+        // ========================================================
         // INVENTORY
-        // --------------------------------------------------------
+        // ========================================================
 
         if (
             this.inventoryOpen &&
@@ -2915,30 +3184,26 @@ export class GameUI {
             this.lastInventoryUpdate =
                 now;
 
-            this.updateInventory();
+
+            try {
+
+                this.updateInventory();
+
+            } catch (error) {
+
+                console.error(
+                    "UI inventory update error:",
+                    error
+                );
+
+            }
 
         }
 
 
-        // --------------------------------------------------------
-        // PETS
-        // --------------------------------------------------------
-
-        if (
-            this.petOpen &&
-            now -
-            this.lastPetUpdate >
-            500
-        ) {
-
-            this.updatePets();
-
-        }
-
-
-        // --------------------------------------------------------
+        // ========================================================
         // MAP
-        // --------------------------------------------------------
+        // ========================================================
 
         if (
             this.mapOpen &&
@@ -2950,25 +3215,49 @@ export class GameUI {
             this.lastMapUpdate =
                 now;
 
-            this.updateMap();
+
+            try {
+
+                this.updateMap();
+
+            } catch (error) {
+
+                console.error(
+                    "UI map update error:",
+                    error
+                );
+
+            }
 
         }
 
 
-        // --------------------------------------------------------
+        // ========================================================
         // STATISTICS
-        // --------------------------------------------------------
+        // ========================================================
 
         if (
             now -
-            this.lastStatsUpdate >
+            this.lastStatisticsUpdate >
             1000
         ) {
 
-            this.lastStatsUpdate =
+            this.lastStatisticsUpdate =
                 now;
 
-            this.updateStatistics();
+
+            try {
+
+                this.updateStatistics();
+
+            } catch (error) {
+
+                console.error(
+                    "UI statistics update error:",
+                    error
+                );
+
+            }
 
         }
 
@@ -2992,72 +3281,24 @@ export class GameUI {
         ) {
 
             this.notify(
-                "❌ Export system unavailable"
+                "⚠️ Export system unavailable"
             );
 
             return;
 
         }
-
-
-        let data = null;
 
 
         try {
 
-            data =
+            const data =
                 systems.exportSave();
 
-        } catch (error) {
 
-            console.error(
-                "Export error:",
-                error
-            );
-
-            this.notify(
-                "❌ Export failed"
-            );
-
-            return;
-
-        }
-
-
-        if (
-            data === null ||
-            data === undefined ||
-            data === ""
-        ) {
-
-            this.notify(
-                "❌ Export failed"
-            );
-
-            return;
-
-        }
-
-
-        if (
-            typeof data !== "string"
-        ) {
-
-            try {
-
-                data =
-                    JSON.stringify(
-                        data,
-                        null,
-                        2
-                    );
-
-            } catch (error) {
-
-                console.error(
-                    "Export stringify error:",
-                    error
-                );
+            if (
+                data === null ||
+                data === undefined
+            ) {
 
                 this.notify(
                     "❌ Export failed"
@@ -3067,17 +3308,25 @@ export class GameUI {
 
             }
 
-        }
 
+            const output =
+                typeof data === "string"
+                    ? data
+                    : JSON.stringify(
+                        data,
+                        null,
+                        2
+                    );
 
-        try {
 
             const blob =
                 new Blob(
-                    [data],
+                    [
+                        output
+                    ],
                     {
                         type:
-                            "application/json"
+                            "application/json;charset=utf-8"
                     }
                 );
 
@@ -3136,9 +3385,10 @@ export class GameUI {
         } catch (error) {
 
             console.error(
-                "Export download error:",
+                "Export error:",
                 error
             );
+
 
             this.notify(
                 "❌ Export failed"
@@ -3153,7 +3403,9 @@ export class GameUI {
     // IMPORT SAVE
     // ============================================================
 
-    importSave(file) {
+    importSave(
+        file
+    ) {
 
         const systems =
             this.getSystems();
@@ -3168,20 +3420,6 @@ export class GameUI {
 
             this.notify(
                 "❌ Import system unavailable"
-            );
-
-            return;
-
-        }
-
-
-        if (
-            file.size >
-            10 * 1024 * 1024
-        ) {
-
-            this.notify(
-                "❌ Save file is too large"
             );
 
             return;
@@ -3226,7 +3464,9 @@ export class GameUI {
                         );
 
 
-                    if (success === false) {
+                    if (
+                        success === false
+                    ) {
 
                         this.notify(
                             "❌ Invalid save"
@@ -3245,7 +3485,18 @@ export class GameUI {
                     setTimeout(
                         () => {
 
-                            window.location.reload();
+                            try {
+
+                                window.location.reload();
+
+                            } catch (error) {
+
+                                console.error(
+                                    "Reload error:",
+                                    error
+                                );
+
+                            }
 
                         },
                         800
@@ -3269,7 +3520,13 @@ export class GameUI {
 
 
         reader.onerror =
-            () => {
+            error => {
+
+                console.error(
+                    "FileReader error:",
+                    error
+                );
+
 
                 this.notify(
                     "❌ File could not be read"
@@ -3287,12 +3544,13 @@ export class GameUI {
         } catch (error) {
 
             console.error(
-                "FileReader error:",
+                "Read save error:",
                 error
             );
 
+
             this.notify(
-                "❌ File could not be read"
+                "❌ Could not read save file"
             );
 
         }
@@ -3304,7 +3562,9 @@ export class GameUI {
     // NOTIFICATION
     // ============================================================
 
-    notify(message) {
+    notify(
+        message
+    ) {
 
         const text =
             String(
@@ -3320,10 +3580,8 @@ export class GameUI {
         }
 
 
-        // --------------------------------------------------------
-        // Use game's notification system only if it exists.
-        // --------------------------------------------------------
-
+        // If the main game has its own notification system,
+        // use it safely.
         if (
             this.game &&
             typeof this.game.showNotification ===
@@ -3357,6 +3615,11 @@ export class GameUI {
 
 
         if (!container) {
+
+            console.warn(
+                "Notification container not found:",
+                text
+            );
 
             return;
 
@@ -3450,16 +3713,30 @@ export class GameUI {
         const current =
             Number(
                 value
-            ) || 0;
+            );
 
 
         const maximum =
-            Math.max(
-                1,
-                Number(
-                    max
-                ) || 1
+            Number(
+                max
             );
+
+
+        const safeCurrent =
+            Number.isFinite(
+                current
+            )
+                ? current
+                : 0;
+
+
+        const safeMaximum =
+            Number.isFinite(
+                maximum
+            ) &&
+            maximum > 0
+                ? maximum
+                : 1;
 
 
         const percent =
@@ -3468,8 +3745,8 @@ export class GameUI {
                 Math.min(
                     100,
                     (
-                        current /
-                        maximum
+                        safeCurrent /
+                        safeMaximum
                     ) *
                     100
                 )
@@ -3497,11 +3774,14 @@ export class GameUI {
             );
 
 
-        if (element) {
+        if (
+            element
+        ) {
 
             element.textContent =
                 String(
-                    value ?? ""
+                    value ??
+                    ""
                 );
 
         }
@@ -3525,7 +3805,8 @@ export class GameUI {
 
         element.textContent =
             String(
-                value ?? ""
+                value ??
+                ""
             );
 
 
@@ -3562,6 +3843,10 @@ export class GameUI {
 
 
         style.textContent = `
+
+            /* ==================================================
+               MAIN UI
+               ================================================== */
 
             #pet-world-ui {
 
@@ -4532,7 +4817,8 @@ export class GameUI {
 
                 border-radius: 9px;
 
-                padding: 8px 10px;
+                padding:
+                    8px 10px;
 
                 background: white;
 
@@ -4835,10 +5121,10 @@ export class GameUI {
                 pointer-events: none;
 
                 width:
-                    max-content;
-
-                max-width:
-                    90vw;
+                    min(
+                        90vw,
+                        500px
+                    );
 
             }
 
@@ -4881,6 +5167,11 @@ export class GameUI {
                         0,
                         0.25
                     );
+
+                max-width:
+                    100%;
+
+                text-align: center;
 
             }
 
@@ -4984,7 +5275,9 @@ export class GameUI {
                MOBILE
                ================================================== */
 
-            @media (max-width: 700px) {
+            @media (
+                max-width: 700px
+            ) {
 
                 .top-status {
 
@@ -5102,6 +5395,24 @@ export class GameUI {
 
                 }
 
+
+                .pet-card {
+
+                    gap: 8px;
+
+                }
+
+
+                .pet-avatar {
+
+                    width: 44px;
+
+                    height: 44px;
+
+                    font-size: 23px;
+
+                }
+
             }
 
         `;
@@ -5114,4 +5425,3 @@ export class GameUI {
     }
 
 }
-```
