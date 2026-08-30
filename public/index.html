@@ -1353,169 +1353,24 @@
 
 
     <!-- =====================================================
-         LOADING SCREEN
+         NEW UPDATED LOADING SCREEN (For main.js & game.js)
     ====================================================== -->
-
-    <div id="loading-screen">
-
-        <div class="loading-box">
-
-            <div class="loading-logo">
-                🐾 PET WORLD
+    <div id="pet-world-loading">
+        <div class="pet-loading-box">
+            <div class="pet-loading-logo">🐾</div>
+            <div class="pet-loading-title">PET WORLD</div>
+            <div id="pet-loading-message" class="pet-loading-message">Loading world...</div>
+            <div class="pet-loading-progress">
+                <div id="pet-loading-progress-fill"></div>
             </div>
-
-            <div class="loading-subtitle">
-                OPEN WORLD PET SURVIVAL
-            </div>
-
-            <div class="loading-spinner"></div>
-
-            <div
-                id="loading-text"
-                class="loading-text"
-            >
-                Loading world...
-            </div>
-
+            <div id="pet-loading-percent" class="pet-loading-percent">0%</div>
         </div>
-
     </div>
 
-
     <!-- =====================================================
-         GAME ERROR
+         CLEAN HUD CONTAINER (game.js will inject ui.js here)
     ====================================================== -->
-
-    <div
-        id="game-error"
-        class="hidden"
-    >
-
-        <h2>
-            ⚠️ Game Failed To Start
-        </h2>
-
-        <p>
-            PET WORLD could not initialize.
-        </p>
-
-        <p id="game-error-details">
-            Please check the browser console.
-        </p>
-
-        <button
-            id="reload-game"
-            type="button"
-        >
-            🔄 RELOAD GAME
-        </button>
-
-    </div>
-
-
-    <!-- =====================================================
-         MAIN GAME HUD
-    ====================================================== -->
-
-    <div id="game-hud">
-
-
-        <!-- PLAYER STATUS -->
-
-        <div class="hud-top-left">
-
-            <div class="status-box">
-
-
-                <!-- HEALTH -->
-
-                <div class="status-row">
-
-                    <span class="status-label">
-                        ❤️ HEALTH
-                    </span>
-
-                    <span
-                        id="health-value"
-                        class="status-value"
-                    >
-                        100 / 100
-                    </span>
-
-                </div>
-
-                <div class="status-bar">
-
-                    <div
-                        id="health-fill"
-                        class="status-fill"
-                    ></div>
-
-                </div>
-
-
-                <!-- STAMINA -->
-
-                <div
-                    class="status-row"
-                    style="margin-top:7px;"
-                >
-
-                    <span class="status-label">
-                        ⚡ STAMINA
-                    </span>
-
-                    <span
-                        id="stamina-value"
-                        class="status-value"
-                    >
-                        100 / 100
-                    </span>
-
-                </div>
-
-                <div class="status-bar">
-
-                    <div
-                        id="stamina-fill"
-                        class="status-fill"
-                    ></div>
-
-                </div>
-
-
-                <!-- HUNGER -->
-
-                <div
-                    class="status-row"
-                    style="margin-top:7px;"
-                >
-
-                    <span class="status-label">
-                        🍖 HUNGER
-                    </span>
-
-                    <span
-                        id="hunger-value"
-                        class="status-value"
-                    >
-                        100 / 100
-                    </span>
-
-                </div>
-
-                <div class="status-bar">
-
-                    <div
-                        id="hunger-fill"
-                        class="status-fill"
-                    ></div>
-
-                </div>
-
-            </div>
-
-        </div>
+    <div id="game-hud"></div>
 
 
         <!-- =================================================
